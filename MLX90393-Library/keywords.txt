@@ -1,0 +1,6 @@
+MLX90393 KEYWORD1
+init KEYWORD2
+StartBurst KEYWORD3
+ReadMeasurement KEYWORD4
+_I2CAddress KEYWORD5
+receiveBuffer KEYWORD6
