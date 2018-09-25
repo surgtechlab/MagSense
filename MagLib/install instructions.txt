@@ -1,0 +1,10 @@
+To install libraries for use in Arduino IDE:
+
+
+	- Download each .zip file individually.
+	- in Arduino go to sketch/Include library/add .ZIP Library...
+	- Repeat for each zip file
+	- Once installed, go to sketch/Include library/(scroll down Contributed libraries)MagLib
+
+
+This will include <MagLib.h> which has all necessary inclues for other libraries.
