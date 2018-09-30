@@ -1,5 +1,6 @@
 ﻿<?xml version='1.0' encoding='UTF-8'?>
 <Project Type="Project" LVVersion="16008000">
+	<Property Name="SMProvider.SMVersion" Type="Int">201310</Property>
 	<Item Name="My Computer" Type="My Computer">
 		<Property Name="IOScan.Faults" Type="Str"></Property>
 		<Property Name="IOScan.NetVarPeriod" Type="UInt">100</Property>
@@ -18,7 +19,7 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="MagBoard_Monitor_n64_v1.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_Monitor_n64_v1.vi"/>
+		<Item Name="MagBoard_Monitor_n64_v1.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/MagBoard_Monitor_n64_v1.vi"/>
 		<Item Name="n64_generate_grid.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/subvis/n64_generate_grid.vi"/>
 		<Item Name="Process_Arduino_DataPacket.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/subvis/Process_Arduino_DataPacket.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -84,8 +85,10 @@
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
 				<Item Name="XControlSupport.lvlib" Type="Library" URL="/&lt;vilib&gt;/_xctls/XControlSupport.lvlib"/>
 			</Item>
-			<Item Name="n64_shape_single_axis.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/subvis/n64_shape_single_axis.vi"/>
-			<Item Name="Read_Serial_Pkt.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/subvis/Read_Serial_Pkt.vi"/>
+			<Item Name="n64_generate_grid.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/subvis/n64_generate_grid.vi"/>
+			<Item Name="n64_shape_single_axis.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/subvis/n64_shape_single_axis.vi"/>
+			<Item Name="Process_Arduino_DataPacket.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/subvis/Process_Arduino_DataPacket.vi"/>
+			<Item Name="Read_Serial_Pkt.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/subvis/Read_Serial_Pkt.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build"/>
 	</Item>
