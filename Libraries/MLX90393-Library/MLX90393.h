@@ -51,6 +51,13 @@ public:
 	 */
 	void ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
 
+	/** Pair of functions to perform async read
+	**/
+	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+
+	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+
+	
 /* ********** DATA DISPLAY FUNCTIONS ********** */
 
 	/** Print raw data to serial port.
