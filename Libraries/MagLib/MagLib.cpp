@@ -248,61 +248,60 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 	{
 		packet_offset = i2cSweep * 6*16; //6*16 is number bytes for 16 XYZ readings
 		
-		setMux(LOW, LOW);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 8] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 14] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 20] = receiveBuffer[i + 1];
-
-		setMux(LOW, HIGH);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 26] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 32] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 38] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 44] = receiveBuffer[i + 1];
-
-		setMux(HIGH, LOW);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 50] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 56] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 62] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 68] = receiveBuffer[i + 1];
-
-		setMux(HIGH, HIGH);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 74] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 80] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 86] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 92] = receiveBuffer[i + 1];
+        //We can delete about a billion lines of code by putting the mux
+        //control in a for loop
+        for(u_int8_t muxIdx =; muxIdx <= 3; muxIdx++)
+        {
+            /*This switch-case mux needs moving into itsown function 
+             *really, but for now...*/
+            switch(muxIdx)
+            {
+                case 0:
+                    setMux(LOW, LOW);
+                    break;
+                case 1:
+                    setMux(LOW, HIGH);
+                    break;
+                case 2:
+                    setMux(HIGH, LOW);
+                    break;
+                case 3:
+                    setMux(HIGH, HIGH);
+                    break;
+                default:
+                    //something went very wrong if we ended up here
+                    Serial.println("INVALID MUX NUM"); while(1);
+                    break;
+                }
+            
+            //Instead of doing each node one by one and blocking insides, we will now try asynchronous calls
+            
+            //Go ahead and request them all first...
+            device1.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+            device2.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+            device3.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+            device4.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+            
+            /*Horrible, horrible way of waiting for each device to be ready
+             * and then read when it says go. We can roughly presume that
+             * device 1 will be ready first because we called it first
+             * 
+             * Packet offsets are calculated by mux number for mux zero,
+             * i+2. fo mux 1, i+26. for mux 2, i+50, and so on...*/
+             
+            while(!device1.measureReady(i2cSweep));
+            device1.takeMeasure(receiveBuffer,zyxt,i2csweep);
+            for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2 +(muxIdx*24)] = receiveBuffer[i + 1];
+            while(!device2.MeasureReady(i2cSweep));
+            device2.takeMeasure(receiveBuffer,zyxt,i2csweep);
+            for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 8+(muxIdx*24)] = receiveBuffer[i + 1];
+            while(!device3.MeasureReady(i2cSweep));
+            device3.takeMeasure(receiveBuffer,zyxt,i2csweep);
+            for (int i = 2; i < 8; i++) buffer[packet_offset + i + 14+(muxIdx*24)] = receiveBuffer[i + 1];
+            while(!device4.IsReady(i2cSweep));
+            device4.takeMeasure(receiveBuffer,zyxt,i2csweep);
+            for (int i = 2; i < 8; i++) buffer[packet_offset + i + 20+(muxIdx*24) = receiveBuffer[i + 1];
+        }
 	
 	} //End for
 	

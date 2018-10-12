@@ -903,6 +903,94 @@ void MLX90393::ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 	}
 }
 
+
+/*Return number of bytes available, if after a request for read, 
+ * there is actually something to read*/
+u_int8_t MLX90393::isReady (int i2cLine)
+{
+	//uint8_t select = (0x40)|(zyxt);
+	uint8_t select = 0x4E;
+	
+	switch (i2cLine)
+	{
+	case 0:
+		return Wire.available();
+		break;
+	case 1:
+		return Wire1.available();
+		break;
+	case 2:
+        return Wire2.available();  		
+        break;
+
+	case 3:
+        return Wire3.available();
+		break;
+
+	default:
+		Serial.println("Invalid i2c select line");while(1);
+        break;
+    }
+}
+
+//So you've requested, and you know there's bytes to be read, so go and read
+u_int8_t MLX90393::takeMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
+{
+    switch(i2cLine)
+    {
+        case 0:
+            receiveBuffer[0] = Wire.read(); //Status byte
+            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
+            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
+            //I have sore fingers from copy and pasting
+            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
+            {
+                receiveBuffer[bufIdx] = Wire.read(); //xMag msb
+            }        
+        break;
+        case 1:
+            receiveBuffer[0] = Wire1.read(); //Status byte
+            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
+            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
+            //I have sore fingers from copy and pasting
+            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
+            {
+                receiveBuffer[bufIdx] = Wire1.read(); //xMag msb
+            }
+        
+        break;
+        
+        case 2:
+            receiveBuffer[0] = Wire2.read(); //Status byte
+            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
+            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
+            //I have sore fingers from copy and pasting
+            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
+            {
+                receiveBuffer[bufIdx] = Wire2.read(); //xMag msb
+            }
+        
+        break;    
+        
+        case 3:
+            receiveBuffer[0] = Wire3.read(); //Status byte
+            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
+            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
+            //I have sore fingers from copy and pasting
+            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
+            {
+                receiveBuffer[bufIdx] = Wire3.read(); //xMag msb
+            }
+        break;
+        
+        default:
+        Serial.println("Invalid select line"); while(1);
+        break;
+    }
+    
+    return 0;
+}
+
 void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 {
 	//uint8_t select = (0x40)|(zyxt);
