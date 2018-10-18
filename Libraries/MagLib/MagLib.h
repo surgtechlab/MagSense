@@ -13,7 +13,9 @@
 #define NODE_32       	198	// 4 + 6*32
 #define NODE_64       	388	// 4 + 6*64
 
-#define NMUX 4
+
+#define NMUX 4 //How many muxes?
+#define NADDR 4 //How many different addresses?
 
 
 
@@ -36,22 +38,6 @@ public:
 
 	void initCommunication(int baudRate, int i2cLine);
 
-/* ********** SINGLE SENSOR CONTROL ********** */
-
-	/**	Initialise single node sensor
-	 	@param address I2C Address for sensor
-	 	@param receiveBuffer Buffer to hold status byte
-	 	@param zytx Selection byte to specify axes to read (0xE -> XYZ)
-		@param i2cLine I2C Channel to use (-1 for non-teensy boards)
-	 */
-	void initSingleNode(uint16_t address, char *buffer, char zyxt, int i2cLine);
-
-	/** Read data current measured by the device.
-		@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
-		@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
-	*/
-	void readSingleNode(char *buffer, char zyxt);
-
 /* ********** FOUR SENSOR CONTROL ********** */
 
 	/** Initialise four node sensor array
@@ -62,11 +48,6 @@ public:
 	 */
 	void initFourNode(uint32_t addressPackage, char *receiveBuffer, char zyxt, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR);
 
-	/** Read data current measured by the device.
-		@param buffer Pointer to data packet.
-		@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
-	*/
-	void readFourNodes(char *buffer, char zyxt, int i2cLine);
 
 /* ********** 16 NODE SENSOR CONTROL ********** */
 
@@ -83,7 +64,6 @@ public:
 		@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X)
 		@param i2cLine I2C Channel to use (-1 for non-teensy boards)
 	*/
-	void read16Nodes(char *buffer, char zyxt, int i2cLine);
 
 /* ********** 64 NODE SENSOR CONTROL ********** */
 
@@ -134,9 +114,6 @@ public:
 	/** Print time taken to get 1000 readings - 4 Node
 	*/
 	void TimeMeasurement(float TimeTaken);
-	
-	/* Return correct device object pointer depending on idx*/
-	MLX90393* whichDevice(int idx);
 
 private:
 	/**	Set digital output pins on Arduino connected to Multiplexer SELECT pins
@@ -154,11 +131,11 @@ private:
 
 	File file;			/** File object used to write data to SD card. */
 
-	MLX90393 device1;	/** MLX90393 device to take readings - I2C Line 1 Address 1 */
-	MLX90393 device2;	/** MLX90393 device to take readings - I2C Line 1 Address 2 */
-	MLX90393 device3;	/** MLX90393 device to take readings - I2C Line 1 Address 3 */
-	MLX90393 device4;	/** MLX90393 device to take readings - I2C Line 1 Address 4 */
-
+	//An array of objects that contain the correct addressing for each node
+	MLX90393 nodeAddrObj[NADDR];
+	//[0] is I2C Line ? Address 1
+	//[1] is I2C Line ? Address 2 ...
+		
 	uint8_t _address1;	/** First I2C address used for communcations */
 	uint8_t _address2;	/** Second I2C address used for communcations */
 	uint8_t _address3;	/** Third I2C address used for communcations */
