@@ -1,3 +1,11 @@
+/*Copyright 2018 University of Leeds, Pete Culmer, Max Houghton, Chris Adams
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
 #include "MagLib.h"
 
 MagLib::MagLib()
@@ -128,40 +136,34 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 	int packet_offset = 0;
 	
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
-	for(uint8_t muxIdx =0; muxIdx <= 3; muxIdx++)
+	for(uint8_t muxIdx =0; muxIdx < NMUX; muxIdx++)
 	{
 		//Set the mux...
 		setMux(muxIdx);
 		
 		//For each device
-		for(uint8_t devIdx=1; devIdx <= 4; devIdx++)
+		for(uint8_t devAddrIdx=1; devAddrIdx <= NADDR; devAddrIdx++)
 		{
 		
 			//We can delete about a billion lines of code by putting the mux
 			//control in a for loop
 			//Do all the requests first
-			int i2cSweep;
+			unsigned int i2cSweep;
 			for (i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
 			{
 				//Now request for each sweep on that device
-				nodeAddrObj[devIdx-1].RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+				nodeAddrObj[devAddrIdx-1].RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
 			}
 								
-				/*Horrible, horrible way of waiting for each device to be ready
-				 * and then read when it says go. We can roughly presume that
-				 * device 1 will be ready first because we called it first
-				 * 
-				 * Packet offsets are calculated by mux number for mux zero,
-				 * i+2. fo mux 1, i+26. for mux 2, i+50, and so on...*/
 			//Requests all done so go and measure
 			for(i2cSweep = 0; i2cSweep <= 3; i2cSweep++)
 			{
 				
-				packet_offset = i2cSweep * 6*16; //6*16 is number bytes for 16 XYZ readings
-				
-				while(!nodeAddrObj[devIdx-1].measureReady(i2cSweep));
-				nodeAddrObj[devIdx-1].takeMeasure(receiveBuffer,zyxt,i2cSweep);
-				for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2 +(muxIdx*24) +((devIdx-1)*6)] = receiveBuffer[i + 1];
+				packet_offset = i2cSweep * NODE_PER_MUX*NODE_N_BYTE; //6*16 is number bytes for 16 XYZ readings
+				//While there's no bytes available to read, do nothing...
+				while(!nodeAddrObj[devAddrIdx-1].measureReady(i2cSweep));
+				nodeAddrObj[devAddrIdx-1].takeMeasure(receiveBuffer,zyxt,i2cSweep);
+				for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2 +(muxIdx*24) +((devAddrIdx-1)*6)] = receiveBuffer[i + 1];
 			}
 		}
 	

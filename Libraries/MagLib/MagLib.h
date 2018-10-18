@@ -1,3 +1,12 @@
+/*Copyright 2018 University of Leeds, Pete Culmer, Max Houghton, Chris Adams
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
+
 #ifndef MAGLIB_H
 #define MAGLIB_H
 
@@ -16,7 +25,7 @@
 
 #define NMUX 4 //How many muxes?
 #define NADDR 4 //How many different addresses?
-
+#define NODE_PER_MUX 16//How many nodes per mux?
 
 
 /**	@file MagLib.h
@@ -114,6 +123,9 @@ public:
 	/** Print time taken to get 1000 readings - 4 Node
 	*/
 	void TimeMeasurement(float TimeTaken);
+	
+	//Error function
+	void MagError(char *err);
 
 private:
 	/**	Set digital output pins on Arduino connected to Multiplexer SELECT pins
@@ -145,9 +157,8 @@ private:
 
 	bool SDCard;		/** Variable to ensure SD card is operating normally. */
 	
-	//Error function
-	void MagError(char *err);
-	
+	//Be able to index wire buses to make it easier
+	i2c_t3* WhichWire(uint8_t wireNo);
 
 };
 

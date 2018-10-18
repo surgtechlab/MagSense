@@ -1,3 +1,11 @@
+/*Copyright 2018 University of Leeds, Pete Culmer, Max Houghton, Chris Adams
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
 #include "MLX90393.h"
 
 MLX90393::MLX90393()
@@ -907,12 +915,7 @@ void MLX90393::ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 /*Return number of bytes available, if after a request for read, 
  * there is actually something to read*/
 u_int8_t MLX90393::measureReady(int i2cLine)
-{
-
-	// Serial.println("Testing is measure ready.");
-	//uint8_t select = (0x40)|(zyxt);
-	uint8_t select = 0x4E;
-	
+{	
 	switch (i2cLine)
 	{
 	case 0:
@@ -1000,52 +1003,18 @@ u_int8_t MLX90393::takeMeasure(char *receiveBuffer, char zyxt, int i2cLine)
 
 void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 {
-	//uint8_t select = (0x40)|(zyxt);
-	uint8_t select = 0x4E;
+	//I have no idea what this does, possibly send this to get a measurement?
+	static const uint8_t select = 0x4E;
+
+	/*STAY CALM. It's not as bad as it looks.
+	Before, we looked at the i2cLine number and if it was 0, we did a bunch of commands for the wire 0 bus, if it was 1, we copy-pasted the same but for Wire1 etc etc.
 	
-	switch (i2cLine)
-	{
-	case 0:
-
-		Wire.beginTransmission(_I2CAddress);	// Start I2C Transmission
-		Wire.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
-		Wire.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
-		// while(!Wire.done());
-		break;
-
-	case 1:
-
-		Wire1.beginTransmission(_I2CAddress);	// Start I2C Transmission
-		Wire1.write(select);						// Read measurement command
-		Wire1.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
-		Wire1.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
-		// while(!Wire1.done());
-		break;
-
-	case 2:
-
-		Wire2.beginTransmission(_I2CAddress);	// Start I2C Transmission
-		Wire2.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire2.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
-		Wire2.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
-		// while(!Wire2.done());
-		break;
-
-	case 3:
-
-		Wire3.beginTransmission(_I2CAddress);	// Start I2C Transmission
-		Wire3.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire3.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
-		Wire3.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
-		// while(!Wire3.done());
-		break;
-		
-	default:
-		Serial.println("Woops"); while(1);
-		break;
-
-	}
+	This made my fingers hurt. Instead, we have a new function, whichWire. This returns a POINTER to the correct Wire object. So in otherworse, if it's zero, it returns the address of Wire, for 1 it returns address of Wire1 etc... All the -> does it derefernce that pointer, aka go to that address and perform beginTransmsion on that object not the address.*/
+	
+	WhichWire(i2cLine)->beginTransmission(_I2CAddress);	// Start I2C Transmission
+	WhichWire(i2cLine)->write(select);						// Read measurement command (ZXYT = 1111)
+	WhichWire(i2cLine)->endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
+	WhichWire(i2cLine)->sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
 }
 
 void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
@@ -1310,4 +1279,26 @@ void MLX90393::printError(uint8_t error)
 	default:
 		break;
 	};
+}
+
+i2c_t3* MLX90393::WhichWire(uint8_t wireNo)
+{	
+	switch(wireNo){
+		case 0:
+			return &Wire;
+			break;
+		case 1:
+			return &Wire1;
+			break;
+		case 2:
+			return &Wire2;
+			break;
+		case 3:
+			return &Wire3;
+			break;
+		default:
+			Serial.println("Invalid wire"); while(1);
+			break;
+		}
+		
 }
