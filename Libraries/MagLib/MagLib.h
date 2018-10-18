@@ -130,6 +130,9 @@ public:
 	/** Print time taken to get 1000 readings - 4 Node
 	*/
 	void TimeMeasurement(float TimeTaken);
+	
+	/* Return correct device object pointer depending on idx*/
+	MLX90393* whichDevice(int idx);
 
 private:
 

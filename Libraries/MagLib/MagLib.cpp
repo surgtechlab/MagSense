@@ -103,6 +103,8 @@ void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zy
 	device4.startBurstMode(receiveBuffer, zyxt, i2cLine);
 }
 
+//dont touch
+/*
 void MagLib::readFourNodes(char *buffer, char zyxt, int i2cLine)
 {
 	unsigned long time = millis();
@@ -122,7 +124,7 @@ void MagLib::readFourNodes(char *buffer, char zyxt, int i2cLine)
 	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
 	for (int i = 2; i < 9; i++) buffer[i + 18] = receiveBuffer[i + 1];
 }
-
+*/
 void MagLib::init16Nodes(uint32_t addressPackage, char *buffer, char zyxt, int *mux, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
 {
 	// Set MUX lines on Arduino board
@@ -151,7 +153,7 @@ void MagLib::init16Nodes(uint32_t addressPackage, char *buffer, char zyxt, int *
 	Serial.print("\n*****MUX(1,1)\n");
 	initFourNode(addressPackage, receiveBuffer, zyxt, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 }
-
+//don't touch
 void MagLib::read16Nodes(char *buffer, char zyxt, int i2cLine)
 {
 	unsigned long time = millis();
@@ -236,6 +238,7 @@ void MagLib::init64Nodes(uint32_t addressPackage, char *receiveBuffer, char zyxt
 
 void MagLib::read64Nodes(char *buffer, char zyxt)
 {
+	
 	unsigned long time = millis();
 	int packet_offset = 0;
 	
@@ -244,66 +247,69 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 	buffer[2] = (time>>16) & 255;
 	buffer[3] = (time>>24) & 255;
 	
-	for (int i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
+	//Loop around the muxId instead, so that we can do async calls to each i2c bus
+	for(u_int8_t muxIdx =0; muxIdx <= 3; muxIdx++)
 	{
-		packet_offset = i2cSweep * 6*16; //6*16 is number bytes for 16 XYZ readings
 		
-        //We can delete about a billion lines of code by putting the mux
-        //control in a for loop
-        for(u_int8_t muxIdx =; muxIdx <= 3; muxIdx++)
-        {
-            /*This switch-case mux needs moving into itsown function 
+		/*This switch-case mux needs moving into itsown function 
              *really, but for now...*/
-            switch(muxIdx)
-            {
-                case 0:
-                    setMux(LOW, LOW);
-                    break;
-                case 1:
-                    setMux(LOW, HIGH);
-                    break;
-                case 2:
-                    setMux(HIGH, LOW);
-                    break;
-                case 3:
-                    setMux(HIGH, HIGH);
-                    break;
-                default:
-                    //something went very wrong if we ended up here
-                    Serial.println("INVALID MUX NUM"); while(1);
-                    break;
-                }
-            
-            //Instead of doing each node one by one and blocking insides, we will now try asynchronous calls
-            
-            //Go ahead and request them all first...
-            device1.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
-            device2.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
-            device3.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
-            device4.RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
-            
-            /*Horrible, horrible way of waiting for each device to be ready
-             * and then read when it says go. We can roughly presume that
-             * device 1 will be ready first because we called it first
-             * 
-             * Packet offsets are calculated by mux number for mux zero,
-             * i+2. fo mux 1, i+26. for mux 2, i+50, and so on...*/
-             
-            while(!device1.measureReady(i2cSweep));
-            device1.takeMeasure(receiveBuffer,zyxt,i2csweep);
-            for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2 +(muxIdx*24)] = receiveBuffer[i + 1];
-            while(!device2.MeasureReady(i2cSweep));
-            device2.takeMeasure(receiveBuffer,zyxt,i2csweep);
-            for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 8+(muxIdx*24)] = receiveBuffer[i + 1];
-            while(!device3.MeasureReady(i2cSweep));
-            device3.takeMeasure(receiveBuffer,zyxt,i2csweep);
-            for (int i = 2; i < 8; i++) buffer[packet_offset + i + 14+(muxIdx*24)] = receiveBuffer[i + 1];
-            while(!device4.IsReady(i2cSweep));
-            device4.takeMeasure(receiveBuffer,zyxt,i2csweep);
-            for (int i = 2; i < 8; i++) buffer[packet_offset + i + 20+(muxIdx*24) = receiveBuffer[i + 1];
-        }
+		switch(muxIdx)
+		{
+			case 0:
+				setMux(LOW, LOW);
+				break;
+			case 1:
+				setMux(LOW, HIGH);
+				break;
+			case 2:
+				setMux(HIGH, LOW);
+				break;
+			case 3:
+				setMux(HIGH, HIGH);
+				break;
+			default:
+				//something went very wrong if we ended up here
+				Serial.println("INVALID MUX NUM"); while(1);
+				break;
+		}
+		
+		//For each device
+		for(u_int8_t devIdx=1; devIdx <= 4; devIdx++)
+		{
+			//Which device are we dealing with here?
+			MLX90393* thisDevice = whichDevice(devIdx);
+		
+			//We can delete about a billion lines of code by putting the mux
+			//control in a for loop
+			//Do all the requests first
+			int i2cSweep;
+			for (i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
+			{
+				//Now request for each sweep on that device
+				thisDevice->RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+			}
+								
+				/*Horrible, horrible way of waiting for each device to be ready
+				 * and then read when it says go. We can roughly presume that
+				 * device 1 will be ready first because we called it first
+				 * 
+				 * Packet offsets are calculated by mux number for mux zero,
+				 * i+2. fo mux 1, i+26. for mux 2, i+50, and so on...*/
+			//Requests all done so go and measure
+			for(i2cSweep = 0; i2cSweep <= 3; i2cSweep++)
+			{
+				
+				packet_offset = i2cSweep * 6*16; //6*16 is number bytes for 16 XYZ readings
+				
+				while(!thisDevice->measureReady(i2cSweep));
+				thisDevice->takeMeasure(receiveBuffer,zyxt,i2cSweep);
+				for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2 +(muxIdx*24) +((devIdx-1)*6)] = receiveBuffer[i + 1];
+			}
+		}
 	
 	} //End for
+	
+	//delay(50);
 	
 }
 
@@ -439,4 +445,26 @@ void MagLib::setMux(int S1, int S0)
 void MagLib::TimeMeasurement(float TimeTaken)
 {
 	Serial.println(TimeTaken, DEC);
+}
+
+
+//This function returns a pointer to the correct private device object depending on the input index
+MLX90393* MagLib::whichDevice(int idx)
+{
+	switch(idx){
+	case 1:
+		return &device1;
+		break;
+	case 2:
+		return &device2;
+		break;
+	case 3:
+		return &device3;
+		break;
+	case 4:
+		return &device4;
+		break;
+	default:
+		Serial.print("Invalid device number!"); while(1);
+	}
 }
