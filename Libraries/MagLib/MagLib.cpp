@@ -238,43 +238,24 @@ void MagLib::init64Nodes(uint32_t addressPackage, char *receiveBuffer, char zyxt
 
 void MagLib::read64Nodes(char *buffer, char zyxt)
 {
-	
+	//Pack the current time into the buffer
 	unsigned long time = millis();
-	int packet_offset = 0;
 	
 	buffer[0] = time & 255;
 	buffer[1] = (time>>8) & 255;
 	buffer[2] = (time>>16) & 255;
 	buffer[3] = (time>>24) & 255;
 	
+	int packet_offset = 0;
+	
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
-	for(u_int8_t muxIdx =0; muxIdx <= 3; muxIdx++)
+	for(uint8_t muxIdx =0; muxIdx <= 3; muxIdx++)
 	{
-		
-		/*This switch-case mux needs moving into itsown function 
-             *really, but for now...*/
-		switch(muxIdx)
-		{
-			case 0:
-				setMux(LOW, LOW);
-				break;
-			case 1:
-				setMux(LOW, HIGH);
-				break;
-			case 2:
-				setMux(HIGH, LOW);
-				break;
-			case 3:
-				setMux(HIGH, HIGH);
-				break;
-			default:
-				//something went very wrong if we ended up here
-				Serial.println("INVALID MUX NUM"); while(1);
-				break;
-		}
+		//Set the mux...
+		setMux(muxIdx);
 		
 		//For each device
-		for(u_int8_t devIdx=1; devIdx <= 4; devIdx++)
+		for(uint8_t devIdx=1; devIdx <= 4; devIdx++)
 		{
 			//Which device are we dealing with here?
 			MLX90393* thisDevice = whichDevice(devIdx);
@@ -434,12 +415,62 @@ void MagLib::closeSDCard()
 	Serial.println("SD Card closed.");
 }
 
+/*There's two versions of setMux to maintain compatibility
+* This is the original one that takes two arguments...
+*/
 void MagLib::setMux(int S1, int S0)
 {
 
 	digitalWrite(_mux[0], S0);
 	digitalWrite(_mux[1], S1);
 }
+
+//This is the new one that takes one that is easier to use in loops//
+uint8_t MagLib::setMux(unsigned int muxSet)
+{
+	//Check the value is no more than the total number of muxes
+	if(muxSet > (NMUX-1))
+	{
+		MagError("Invalid MUX");
+		//Will never get here: MagError is infinite, but it keeps the compiler happy
+		return -1;
+	}
+	
+	/*For each mux...
+	* (Let compiler decide what types to use), we have no idea how many muxes 
+	* there might be in future) */
+	for(unsigned int muxIdx =1; muxIdx <= NMUX; muxIdx++)
+	{
+		//Extract the correct bit and set the correct MUX
+		digitalWrite(_mux[muxIdx-1], (muxSet & muxIdx)>>(muxIdx-1));
+		/*In otherwords, for the first mux, get the first bit (1&1) 
+		* and shift it 0 times to right */
+	} 
+	
+}
+
+// This is a general error function that you can use however you want
+// It will print something to the serial monitor. It's not critical but it should be noted
+void MagLib::MagError(char *errString){
+	//How quickly do you want to flash the error?
+	static const unsigned int repRate = 500;
+
+	//Do couple of repeats
+	while(1){
+		//What will we prefix the warning message with?
+		char prefix[] = "* Warning: ";
+		//Construct a nice box around the error message
+		//+2 because space and * at end of message
+		char stars[strlen(errString)+strlen(prefix)+2] = {'*'};
+		Serial.println(stars);
+		Serial.print(prefix); Serial.print(errString); Serial.print(" *");
+		Serial.println(stars);
+		//Make it flash!
+		delay(repRate);
+	}
+	
+}
+
 
 
 void MagLib::TimeMeasurement(float TimeTaken)

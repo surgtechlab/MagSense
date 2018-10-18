@@ -13,6 +13,10 @@
 #define NODE_32       	198	// 4 + 6*32
 #define NODE_64       	388	// 4 + 6*64
 
+#define NMUX 4
+
+
+
 /**	@file MagLib.h
 	@brief Class for integration with arrays of MagOne sensors on the Arduino platform.
 	@author Max Houghton, Pete Culmer
@@ -135,11 +139,15 @@ public:
 	MLX90393* whichDevice(int idx);
 
 private:
-
 	/**	Set digital output pins on Arduino connected to Multiplexer SELECT pins
 		@param muxBus Array of HIGH/LOW values for SELECT pins
 	 */
+	 
 	void setMux(int S1, int S0);
+	
+	/* We have a new improved function that can be overloaded to use in loops and
+	* be used with a flexible number of muxes */
+	uint8_t setMux(unsigned int muxSet);
 
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
 	char packet_header[5]; // Used to denote start of binary data packet
@@ -159,6 +167,10 @@ private:
 	int _mux[2];		/** Pins specifying single multiplexer bus [S1 S0] */
 
 	bool SDCard;		/** Variable to ensure SD card is operating normally. */
+	
+	//Error function
+	void MagError(char *err);
+	
 
 };
 
