@@ -10,7 +10,7 @@ set(s,'BaudRate',9600);
 fopen(s);
 
 %Generate a formatspec
-headerSpec.string = 'Hello World';
+headerSpec.string = 'Hello';
 headerSpec.string = [uint8(headerSpec.string) ...
     hex2dec('0A') hex2dec('0B') hex2dec('0C')];
 
@@ -28,7 +28,7 @@ tic
 while(1)
     %Go ahead and find the header
     waitForHeader(s,headerSpec);
-        disp('Found the header!');
+        %disp('Found the header!');
 
     packedData = fread(s,bufferSize,'uint8');
     
@@ -63,7 +63,7 @@ while(1)
     zlim([-2^15 2^15]);
     caxis([-2^15 2^15])
     colormap(jet(128));
-    view([-270+45 25]);
+    view([-270+45 45]);
     
 %     subplot(2,2,3:4)
 %     scatter(1:64,magData.dat(:,3));

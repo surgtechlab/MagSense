@@ -48,7 +48,12 @@ function magData = magUnpackWords(packedData)
     
     
     %The PCB is layed out really fuckin' weird, so sort the order out
+    %Flip every other row left-right
     magData.dat(:,2:2:end,:) = flipud(magData.dat(:,2:2:end,:));
+    %Also 7th row?!?!
     magData.dat(:,7,:) = flipud(magData.dat(:,7,:));
+    %Also nodes 29 and 31?!?! WHAT IS HAPPENING
+    magData.dat(2:3,4,:) = flipud(magData.dat(2:3,4,:));
+    
     
 end
