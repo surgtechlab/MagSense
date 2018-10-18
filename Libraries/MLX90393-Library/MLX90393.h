@@ -53,9 +53,9 @@ public:
 
 	/** Pair of functions to perform async read
 	**/
-	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+/* 	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);*/
 
-	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine); 
 
 	
 /* ********** DATA DISPLAY FUNCTIONS ********** */
@@ -86,6 +86,13 @@ public:
 	/** Print time taken between readings.
 	*/
 	void printTimeElapsed(void);
+	
+/* *********** Asynchronous i2c functions *** */
+	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+	u_int8_t takeMeasure(char *receiveBuffer, char zyxt, int i2cLine);
+	u_int8_t measureReady(int i2cLine);
+	
+	
 
 private:
 

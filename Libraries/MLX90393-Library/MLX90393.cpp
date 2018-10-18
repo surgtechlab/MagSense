@@ -906,25 +906,29 @@ void MLX90393::ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 
 /*Return number of bytes available, if after a request for read, 
  * there is actually something to read*/
-u_int8_t MLX90393::isReady (int i2cLine)
+u_int8_t MLX90393::measureReady(int i2cLine)
 {
+
+	// Serial.println("Testing is measure ready.");
 	//uint8_t select = (0x40)|(zyxt);
 	uint8_t select = 0x4E;
 	
 	switch (i2cLine)
 	{
 	case 0:
-		return Wire.available();
+/* 		Serial.print("Available:");
+		Serial.print(Wire.available()); */
+		return  Wire.finish() && Wire.available() ==7;
 		break;
 	case 1:
-		return Wire1.available();
+		return  Wire1.finish() && Wire1.available() ==7;
 		break;
 	case 2:
-        return Wire2.available();  		
+        return  Wire2.finish() && Wire2.available() ==7;  		
         break;
 
 	case 3:
-        return Wire3.available();
+        return Wire3.finish() && Wire3.available() ==7;
 		break;
 
 	default:
@@ -934,11 +938,14 @@ u_int8_t MLX90393::isReady (int i2cLine)
 }
 
 //So you've requested, and you know there's bytes to be read, so go and read
-u_int8_t MLX90393::takeMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
+u_int8_t MLX90393::takeMeasure(char *receiveBuffer, char zyxt, int i2cLine)
 {
     switch(i2cLine)
     {
         case 0:
+			//thisWire = whatWire(i2cline);
+			//thisWire.read();
+			//receiveBuffer[0] = myWireFunctionRead(i2cline);
             receiveBuffer[0] = Wire.read(); //Status byte
             receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
             receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
@@ -1002,57 +1009,42 @@ void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 
 		Wire.beginTransmission(_I2CAddress);	// Start I2C Transmission
 		Wire.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire.endTransmission();					// Stop I2C Transmission
-		Wire.sendRequest(_I2CAddress, 7);		// Request 9 bytes of data
+		Wire.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
+		Wire.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
+		// while(!Wire.done());
 		break;
 
 	case 1:
 
 		Wire1.beginTransmission(_I2CAddress);	// Start I2C Transmission
 		Wire1.write(select);						// Read measurement command
-		Wire1.endTransmission();					// Stop I2C Transmission
-		Wire1.sendRequest(_I2CAddress, 7);		// Request 9 bytes of data
+		Wire1.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
+		Wire1.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
+		// while(!Wire1.done());
 		break;
 
 	case 2:
 
 		Wire2.beginTransmission(_I2CAddress);	// Start I2C Transmission
 		Wire2.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire2.endTransmission();					// Stop I2C Transmission
-		Wire2.sendRequest(_I2CAddress, 7);		// Request 9 bytes of data
+		Wire2.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
+		Wire2.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
+		// while(!Wire2.done());
 		break;
 
 	case 3:
 
 		Wire3.beginTransmission(_I2CAddress);	// Start I2C Transmission
 		Wire3.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire3.endTransmission();					// Stop I2C Transmission
-		Wire3.sendRequest(_I2CAddress, 7);		// Request 9 bytes of data
+		Wire3.endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
+		Wire3.sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
+		// while(!Wire3.done());
 		break;
-
+		
 	default:
-		Wire.beginTransmission(_I2CAddress);	// Start I2C Transmission
-		Wire.write(select);						// Read measurement command (ZXYT = 1111)
-		Wire.endTransmission();					// Stop I2C Transmission
-		Wire.requestFrom(_I2CAddress, 9);		// Request 9 bytes of data
-
-		if (Wire.available() == 9)
-		{
-			receiveBuffer[0] = Wire.read(); //Status byte
-			receiveBuffer[1] = Wire.read(); //tMag msb
-			receiveBuffer[2] = Wire.read(); //tMag lsb
-			receiveBuffer[3] = Wire.read(); //xMag msb
-			receiveBuffer[4] = Wire.read(); //xMag lsb
-			receiveBuffer[5] = Wire.read(); //yMag msb
-			receiveBuffer[6] = Wire.read(); //yMag lsb
-			receiveBuffer[7] = Wire.read(); //zMag msb
-			receiveBuffer[8] = Wire.read(); //zMag lsb
-		}
-		else {
-			//Serial.println("*** No Wires available: Read measurements failed.");
-			//resetDevice(receiveBuffer, select, i2cLine);
-		}
+		Serial.println("Woops"); while(1);
 		break;
+
 	}
 }
 
