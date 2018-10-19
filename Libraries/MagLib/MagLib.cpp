@@ -158,14 +158,16 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 			//Requests all done so go and measure
 			for(i2cSweep = 0; i2cSweep <= 3; i2cSweep++)
 			{
-				
-				packet_offset = i2cSweep * NODE_PER_MUX*NODE_N_BYTE; //6*16 is number bytes for 16 XYZ readings
-				
 				//While there's no bytes available to read, do nothing...
 				while(!nodeAddrObj[devAddrIdx-1].measureReady(i2cSweep));
 				//Okay this node address is ready, so go ahead and read into receive buf
 				nodeAddrObj[devAddrIdx-1].takeMeasure(receiveBuffer,i2cSweep);
-				for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2 +(muxIdx*24) +((devAddrIdx-1)*6)] = receiveBuffer[i + 1];
+				
+				//Work out the address 
+				uint16_t packetOffset = i2cSweep * NODE_PER_MUX*NODE_N_BYTE;
+				//Based on the address of the mux too
+				packetOffset = packetOffset + 2 + (muxIdx*24) +((devAddrIdx-1)*6);
+				for (int i = 2; i < RCVBUFSZ-1; i++) buffer[packetOffset+i] = receiveBuffer[i + 1];
 			}
 		}
 	
@@ -326,7 +328,9 @@ uint8_t MagLib::setMux(unsigned int muxSet)
 		digitalWrite(_mux[muxIdx-1], (muxSet & muxIdx)>>(muxIdx-1));
 		/*In otherwords, for the first mux, get the first bit (1&1) 
 		* and shift it 0 times to right */
-	} 
+	}
+	
+	return 1;
 	
 }
 
