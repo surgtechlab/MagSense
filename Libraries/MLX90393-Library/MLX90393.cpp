@@ -914,91 +914,53 @@ void MLX90393::ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 
 /*Return number of bytes available, if after a request for read, 
  * there is actually something to read*/
-u_int8_t MLX90393::measureReady(int i2cLine)
+uint8_t MLX90393::measureReady(uint8_t i2cLine)
 {	
-	switch (i2cLine)
-	{
-	case 0:
-/* 		Serial.print("Available:");
-		Serial.print(Wire.available()); */
-		return  Wire.finish() && Wire.available() ==7;
-		break;
-	case 1:
-		return  Wire1.finish() && Wire1.available() ==7;
-		break;
-	case 2:
-        return  Wire2.finish() && Wire2.available() ==7;  		
-        break;
-
-	case 3:
-        return Wire3.finish() && Wire3.available() ==7;
-		break;
-
-	default:
-		Serial.println("Invalid i2c select line");while(1);
-        break;
-    }
+	//Choose the right wire object depending on the 
+	i2c_t3* thisWire = WhichWire(i2cLine);
+	/*This is still just a pointer, so when we run commands, we must
+	deference it using ->*/
+	
+	//Has it finished transmitting the previous asynchronous requests?
+	//And are there the correct number of bytes available?
+	return (thisWire->finish() && thisWire->available());
 }
 
 //So you've requested, and you know there's bytes to be read, so go and read
-u_int8_t MLX90393::takeMeasure(char *receiveBuffer, char zyxt, int i2cLine)
+uint8_t MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
 {
-    switch(i2cLine)
+	/* Here's an email from Pete that explains what each byte means:
+	* Each read from a chip (with our current config) will return the following (each line = 1 * 
+	* byte)
+ 
+	* [MLX Return data] (I may have ordered XYZ wrong, but you get the idea)
+	* Status
+	* X msb
+	* X lsb
+	* Y msb
+	* Y lsb
+	* Z msb
+	* Z lsb
+	* [END PACKET] */
+
+	//Choose the right wire object depending on the 
+	i2c_t3* thisWire = WhichWire(i2cLine);
+	/*This is still just a pointer, so when we run commands, we must
+	deference it using ->*/
+	
+	receiveBuffer[0] = thisWire->read(); //Status byte
+	receiveBuffer[1] = 0; //We used to request temperature data and put this here
+	receiveBuffer[2] = 0; //...But no more. So keep as is and set as zeros
+	//The rest is x,y,z
+	for(uint8_t bufIdx=3; bufIdx < RCVBUFSZ-1; bufIdx++)
     {
-        case 0:
-			//thisWire = whatWire(i2cline);
-			//thisWire.read();
-			//receiveBuffer[0] = myWireFunctionRead(i2cline);
-            receiveBuffer[0] = Wire.read(); //Status byte
-            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
-            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
-            //I have sore fingers from copy and pasting
-            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
-            {
-                receiveBuffer[bufIdx] = Wire.read(); //xMag msb
-            }        
-        break;
-        case 1:
-            receiveBuffer[0] = Wire1.read(); //Status byte
-            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
-            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
-            //I have sore fingers from copy and pasting
-            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
-            {
-                receiveBuffer[bufIdx] = Wire1.read(); //xMag msb
-            }
-        
-        break;
-        
-        case 2:
-            receiveBuffer[0] = Wire2.read(); //Status byte
-            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
-            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
-            //I have sore fingers from copy and pasting
-            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
-            {
-                receiveBuffer[bufIdx] = Wire2.read(); //xMag msb
-            }
-        
-        break;    
-        
-        case 3:
-            receiveBuffer[0] = Wire3.read(); //Status byte
-            receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
-            receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
-            //I have sore fingers from copy and pasting
-            for(u_int8_t bufIdx=3; bufIdx < 8; bufIdx++)
-            {
-                receiveBuffer[bufIdx] = Wire3.read(); //xMag msb
-            }
-        break;
-        
-        default:
-        Serial.println("Invalid select line"); while(1);
-        break;
+		receiveBuffer[bufIdx] = thisWire->read(); //xMag msb
     }
-    
-    return 0;
+	//The buffer is one too big! Woops!
+	receiveBuffer[8] = 0;
+	
+	//Everything went fine :)
+	return 0;
 }
 
 void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)

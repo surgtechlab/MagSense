@@ -13,6 +13,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <i2c_t3.h>
 
 #define NODE_N_BYTE 6 //Number of bytes per node
+#define RCVBUFSZ 9
+
 //#include <cstdint>
 
 // #include <DateTime.h>
@@ -99,8 +101,8 @@ public:
 	
 /* *********** Asynchronous i2c functions *** */
 	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
-	u_int8_t takeMeasure(char *receiveBuffer, char zyxt, int i2cLine);
-	u_int8_t measureReady(int i2cLine);
+	uint8_t takeMeasure(char *receiveBuffer, int i2cLine);
+	uint8_t measureReady(uint8_t i2cLine);
 	
 	
 
