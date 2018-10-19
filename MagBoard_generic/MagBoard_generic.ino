@@ -55,8 +55,16 @@ void setup() {
   Serial.println("\nInitialised I2C Bus");
   delay(2000);
   Serial.println("\nReading....\n\n");
+
+  //i2c reads from hear onwards will be non-blocking
+  Wire.setOpMode(I2C_OP_MODE_ISR);
+  Wire1.setOpMode(I2C_OP_MODE_ISR);
+  Wire2.setOpMode(I2C_OP_MODE_ISR);
+  Wire3.setOpMode(I2C_OP_MODE_ISR);
   
 }
+
+int timeMode = 0;
 
 void loop() {
   // put your main code here, to run repeatedly:
@@ -64,13 +72,19 @@ void loop() {
   startmicros = micros ();
   device.read64Nodes(buffer, Select_ZYX);
   currentmicros = micros ();
-  /*
   period = currentmicros - startmicros;
+
+  if (timeMode)
+  {
   Serial.print("\nMagBoardv64. Read Time (uS):");
   Serial.println(period);
+  
   device.printASCIIData(buffer, NODE_64);
-*/
-  device.printRawData(buffer, BIN, NODE_64);
+  }
+  else{
 
+  Serial.print("Hello");
+  device.printRawData(buffer, BIN, NODE_64);
+  }
   delay(100);
 }

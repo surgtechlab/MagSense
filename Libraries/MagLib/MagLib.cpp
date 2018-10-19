@@ -1,3 +1,11 @@
+/*Copyright 2018 University of Leeds, Pete Culmer, Max Houghton, Chris Adams
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
 #include "MagLib.h"
 
 MagLib::MagLib()
@@ -47,38 +55,6 @@ void MagLib::initCommunication(int baudRate, int i2cLine)
 	}
 }
 
-void MagLib::initSingleNode(uint16_t address, char *buffer, char zyxt, int i2cLine)
-{
-	
-	uint8_t GAIN_SEL = 0x00;  // 
-	uint8_t RES_XYZ = 0x2A;  // 0x15=gain 1
-	uint8_t DIG_FILT = 0x1;
-	uint8_t OSR = 0x0;
-	
-	device1.init(receiveBuffer, address, i2cLine);
-	device1.configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
-	device1.startBurstMode(receiveBuffer, zyxt, i2cLine);
-
-	buffer[0] = receiveBuffer[0];	// Status byte
-}
-
-void MagLib::readSingleNode(char *buffer, char zyxt)
-{
-	unsigned long time = millis();
-
-	buffer[0] = (time & 0xFF00) >> 8;	// T msb
-	buffer[1] = (time & 0xFF);			// T lsb
-
-	device1.ReadMeasurement(receiveBuffer, zyxt, 0);
-
-	buffer[2] = receiveBuffer[3];
-	buffer[3] = receiveBuffer[4];
-	buffer[4] = receiveBuffer[5];
-	buffer[5] = receiveBuffer[6];
-	buffer[6] = receiveBuffer[7];
-	buffer[7] = receiveBuffer[8];
-}
-
 void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zyxt, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
 {	
 	_address1 = addressPackage & 0xFF;
@@ -86,41 +62,21 @@ void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zy
 	_address3 = (addressPackage & 0xFF0000) >> 16;
 	_address4 = (addressPackage & 0xFF000000) >> 24;
 		
-	device1.init(receiveBuffer, _address1, i2cLine);
-	device1.configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
-	device1.startBurstMode(receiveBuffer, zyxt, i2cLine);
+	nodeAddrObj[0].init(receiveBuffer, _address1, i2cLine);
+	nodeAddrObj[0].configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
+	nodeAddrObj[0].startBurstMode(receiveBuffer, zyxt, i2cLine);
 
-	device2.init(receiveBuffer, _address2, i2cLine);
-	device2.configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
-	device2.startBurstMode(receiveBuffer, zyxt, i2cLine);
+	nodeAddrObj[1].init(receiveBuffer, _address2, i2cLine);
+	nodeAddrObj[1].configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
+	nodeAddrObj[1].startBurstMode(receiveBuffer, zyxt, i2cLine);
 
-	device3.init(receiveBuffer, _address3, i2cLine);
-	device3.configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
-	device3.startBurstMode(receiveBuffer, zyxt, i2cLine);
+	nodeAddrObj[2].init(receiveBuffer, _address3, i2cLine);
+	nodeAddrObj[2].configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
+	nodeAddrObj[2].startBurstMode(receiveBuffer, zyxt, i2cLine);
 
-	device4.init(receiveBuffer, _address4, i2cLine);
-	device4.configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
-	device4.startBurstMode(receiveBuffer, zyxt, i2cLine);
-}
-
-void MagLib::readFourNodes(char *buffer, char zyxt, int i2cLine)
-{
-	unsigned long time = millis();
-
-	buffer[0] = (time & 0xFF00) >> 8;			// T msb
-	buffer[1] = (time & 0xFF);					// T lsb
-
-	device1.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++) buffer[i] = receiveBuffer[i + 1];
-
-	device2.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++)	buffer[i + 6] = receiveBuffer[i + 1];
-
-	device3.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++) buffer[i + 12] = receiveBuffer[i + 1];
-
-	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++) buffer[i + 18] = receiveBuffer[i + 1];
+	nodeAddrObj[3].init(receiveBuffer, _address4, i2cLine);
+	nodeAddrObj[3].configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
+	nodeAddrObj[3].startBurstMode(receiveBuffer, zyxt, i2cLine);
 }
 
 void MagLib::init16Nodes(uint32_t addressPackage, char *buffer, char zyxt, int *mux, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
@@ -152,73 +108,6 @@ void MagLib::init16Nodes(uint32_t addressPackage, char *buffer, char zyxt, int *
 	initFourNode(addressPackage, receiveBuffer, zyxt, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 }
 
-void MagLib::read16Nodes(char *buffer, char zyxt, int i2cLine)
-{
-	unsigned long time = millis();
-	
-	buffer[0] = time & 255;
-	buffer[1] = (time>>8) & 255;
-	buffer[2] = (time>>16) & 255;
-	buffer[3] = (time>>24) & 255;
-	
-	//Serial.print("\nStart Read Cycle\n");
-	setMux(LOW, LOW);
-
-	device1.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i+2] = receiveBuffer[i + 1];
-
-	device2.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++)	buffer[i + 8] = receiveBuffer[i + 1];
-
-	device3.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 14] = receiveBuffer[i + 1];
-
-	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 20] = receiveBuffer[i + 1];
-
-	setMux(LOW, HIGH);
-
-	device1.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 26] = receiveBuffer[i + 1];
-
-	device2.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++)	buffer[i + 32] = receiveBuffer[i + 1];
-
-	device3.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 38] = receiveBuffer[i + 1];
-
-	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 44] = receiveBuffer[i + 1];
-
-	setMux(HIGH, LOW);
-
-	device1.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 50] = receiveBuffer[i + 1];
-
-	device2.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++)	buffer[i + 56] = receiveBuffer[i + 1];
-
-	device3.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 62] = receiveBuffer[i + 1];
-
-	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 68] = receiveBuffer[i + 1];
-
-	setMux(HIGH, HIGH);
-
-	device1.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 74] = receiveBuffer[i + 1];
-
-	device2.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++)	buffer[i + 80] = receiveBuffer[i + 1];
-
-	device3.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 86] = receiveBuffer[i + 1];
-
-	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 8; i++) buffer[i + 92] = receiveBuffer[i + 1];
-}
-
 void MagLib::init64Nodes(uint32_t addressPackage, char *receiveBuffer, char zyxt, int *mux, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
 {
 	// Init Bus0 16 nodes
@@ -236,75 +125,55 @@ void MagLib::init64Nodes(uint32_t addressPackage, char *receiveBuffer, char zyxt
 
 void MagLib::read64Nodes(char *buffer, char zyxt)
 {
+	//Pack the current time into the buffer
 	unsigned long time = millis();
-	int packet_offset = 0;
 	
 	buffer[0] = time & 255;
 	buffer[1] = (time>>8) & 255;
 	buffer[2] = (time>>16) & 255;
 	buffer[3] = (time>>24) & 255;
 	
-	for (int i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
+	int packet_offset = 0;
+	
+	//Loop around the muxId instead, so that we can do async calls to each i2c bus
+	for(uint8_t muxIdx =0; muxIdx < NMUX; muxIdx++)
 	{
-		packet_offset = i2cSweep * 6*16; //6*16 is number bytes for 16 XYZ readings
+		//Set the mux...
+		setMux(muxIdx);
 		
-		setMux(LOW, LOW);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 2] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 8] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 14] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 20] = receiveBuffer[i + 1];
-
-		setMux(LOW, HIGH);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 26] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 32] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 38] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 44] = receiveBuffer[i + 1];
-
-		setMux(HIGH, LOW);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 50] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 56] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 62] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 68] = receiveBuffer[i + 1];
-
-		setMux(HIGH, HIGH);
-
-		device1.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 74] = receiveBuffer[i + 1];
-
-		device2.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++)	buffer[packet_offset + i + 80] = receiveBuffer[i + 1];
-
-		device3.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 86] = receiveBuffer[i + 1];
-
-		device4.ReadMeasurement(receiveBuffer, zyxt, i2cSweep);
-		for (int i = 2; i < 8; i++) buffer[packet_offset + i + 92] = receiveBuffer[i + 1];
+		//For each device
+		for(uint8_t devAddrIdx=1; devAddrIdx <= NADDR; devAddrIdx++)
+		{
+		
+			//We can delete about a billion lines of code by putting the mux
+			//control in a for loop
+			//Do all the requests first
+			unsigned int i2cSweep;
+			for (i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
+			{
+				//Now request for each sweep on that device
+				nodeAddrObj[devAddrIdx-1].RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+			}
+								
+			//Requests all done so go and measure
+			for(i2cSweep = 0; i2cSweep <= 3; i2cSweep++)
+			{
+				//While there's no bytes available to read, do nothing...
+				while(!nodeAddrObj[devAddrIdx-1].measureReady(i2cSweep));
+				//Okay this node address is ready, so go ahead and read into receive buf
+				nodeAddrObj[devAddrIdx-1].takeMeasure(receiveBuffer,i2cSweep);
+				
+				//Work out the address 
+				uint16_t packetOffset = i2cSweep * NODE_PER_MUX*NODE_N_BYTE;
+				//Based on the address of the mux too
+				packetOffset = packetOffset + 2 + (muxIdx*24) +((devAddrIdx-1)*6);
+				for (int i = 2; i < RCVBUFSZ-1; i++) buffer[packetOffset+i] = receiveBuffer[i + 1];
+			}
+		}
 	
 	} //End for
+	
+	//delay(50);
 	
 }
 
@@ -429,6 +298,9 @@ void MagLib::closeSDCard()
 	Serial.println("SD Card closed.");
 }
 
+/*There's two versions of setMux to maintain compatibility
+* This is the original one that takes two arguments...
+*/
 void MagLib::setMux(int S1, int S0)
 {
 
@@ -436,6 +308,53 @@ void MagLib::setMux(int S1, int S0)
 	digitalWrite(_mux[1], S1);
 }
 
+//This is the new one that takes one that is easier to use in loops//
+uint8_t MagLib::setMux(unsigned int muxSet)
+{
+	//Check the value is no more than the total number of muxes
+	if(muxSet > (NMUX-1))
+	{
+		MagError("Invalid MUX");
+		//Will never get here: MagError is infinite, but it keeps the compiler happy
+		return -1;
+	}
+	
+	/*For each mux...
+	* (Let compiler decide what types to use), we have no idea how many muxes 
+	* there might be in future) */
+	for(unsigned int muxIdx =1; muxIdx <= NMUX; muxIdx++)
+	{
+		//Extract the correct bit and set the correct MUX
+		digitalWrite(_mux[muxIdx-1], (muxSet & muxIdx)>>(muxIdx-1));
+		/*In otherwords, for the first mux, get the first bit (1&1) 
+		* and shift it 0 times to right */
+	}
+	
+	return 1;
+	
+}
+
+// This is a general error function that you can use however you want
+// It will print something to the serial monitor. It's not critical but it should be noted
+void MagLib::MagError(char *errString){
+	//How quickly do you want to flash the error?
+	static const unsigned int repRate = 500;
+
+	//Do couple of repeats
+	while(1){
+		//What will we prefix the warning message with?
+		char prefix[] = "* Warning: ";
+		//Construct a nice box around the error message
+		//+2 because space and * at end of message
+		char stars[strlen(errString)+strlen(prefix)+2] = {'*'};
+		Serial.println(stars);
+		Serial.print(prefix); Serial.print(errString); Serial.print(" *");
+		Serial.println(stars);
+		//Make it flash!
+		delay(repRate);
+	}
+	
+}
 
 void MagLib::TimeMeasurement(float TimeTaken)
 {

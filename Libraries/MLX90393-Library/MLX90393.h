@@ -1,8 +1,20 @@
+/*Copyright 2018 University of Leeds, Pete Culmer, Max Houghton, Chris Adams
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.*/
+
 #ifndef MLX90393_H
 #define MLX90393_H
 
 #include <Arduino.h>
 #include <i2c_t3.h>
+
+#define NODE_N_BYTE 6 //Number of bytes per node
+#define RCVBUFSZ 9
+
 //#include <cstdint>
 
 // #include <DateTime.h>
@@ -53,9 +65,9 @@ public:
 
 	/** Pair of functions to perform async read
 	**/
-	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+/* 	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);*/
 
-	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine); 
 
 	
 /* ********** DATA DISPLAY FUNCTIONS ********** */
@@ -86,8 +98,17 @@ public:
 	/** Print time taken between readings.
 	*/
 	void printTimeElapsed(void);
+	
+/* *********** Asynchronous i2c functions *** */
+	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+	uint8_t takeMeasure(char *receiveBuffer, int i2cLine);
+	uint8_t measureReady(uint8_t i2cLine);
+	
+	
 
 private:
+
+	i2c_t3* WhichWire(uint8_t wireNo);
 
 	/** Print error description
 	 *	@param error byte specifying nature of the error received
