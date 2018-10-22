@@ -3,12 +3,19 @@
 
 #include <SD.h>
 #include <SPI.h>
-#include "MLX90393.h"
 
+#if defined(TEENSYDUINO)
+    //  --------------- Teensy -----------------
+	#include "MLX90393_teensy.h"
+#else // --------------- Arduino ------------------
+	#include "MLX90393_wire.h"
+#endif
+
+	
 #define BINARY 			0
 #define HEXADECIMAL 	1
-#define NODE_SINGLE   	8	// 2 + 6
-#define NODE_FOUR     	26	// 2 + 6*4
+#define NODE_SINGLE   	10	// 4 + 6
+#define NODE_FOUR     	28	// 4 + 6*4
 #define NODE_16       	100	// 4 + 6*16
 #define NODE_32       	198	// 4 + 6*32
 #define NODE_64       	388	// 4 + 6*64

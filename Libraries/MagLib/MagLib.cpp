@@ -15,7 +15,7 @@ void MagLib::initCommunication(int baudRate, int i2cLine)
 	Serial.begin(baudRate);
 	
 	delay(1000);
-	
+	/*
 	switch (i2cLine) {
 	case 0:
 		Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
@@ -44,7 +44,7 @@ void MagLib::initCommunication(int baudRate, int i2cLine)
 	default:
 		Wire.begin();
 		break;
-	}
+	}*/
 }
 
 void MagLib::initSingleNode(uint16_t address, char *buffer, char zyxt, int i2cLine)
@@ -106,21 +106,23 @@ void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zy
 void MagLib::readFourNodes(char *buffer, char zyxt, int i2cLine)
 {
 	unsigned long time = millis();
-
-	buffer[0] = (time & 0xFF00) >> 8;			// T msb
-	buffer[1] = (time & 0xFF);					// T lsb
-
+	
+	buffer[0] = time & 255;
+	buffer[1] = (time>>8) & 255;
+	buffer[2] = (time>>16) & 255;
+	buffer[3] = (time>>24) & 255;
+	
 	device1.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++) buffer[i] = receiveBuffer[i + 1];
+	for (int i = 2; i < 8; i++) buffer[i+2] = receiveBuffer[i + 1];
 
 	device2.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++)	buffer[i + 6] = receiveBuffer[i + 1];
+	for (int i = 2; i < 8; i++)	buffer[i + 8] = receiveBuffer[i + 1];
 
 	device3.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++) buffer[i + 12] = receiveBuffer[i + 1];
+	for (int i = 2; i < 8; i++) buffer[i + 14] = receiveBuffer[i + 1];
 
 	device4.ReadMeasurement(receiveBuffer, zyxt, i2cLine);
-	for (int i = 2; i < 9; i++) buffer[i + 18] = receiveBuffer[i + 1];
+	for (int i = 2; i < 8; i++) buffer[i + 20] = receiveBuffer[i + 1];
 }
 
 void MagLib::init16Nodes(uint32_t addressPackage, char *buffer, char zyxt, int *mux, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
@@ -321,17 +323,8 @@ void MagLib::printRawData(char *buffer, int format, int size)
 	
 	switch (format) {
 		case BIN:
-			// replace with more optimised pointer mode
-			Serial.write(packet_header,5);
-			Serial.write(buffer,size);
-			/*for (int i = 0; i < size; i++) {
-			Serial.write(buffer[i]);
-			if (i > NODE_32) {
-				Serial.flush();
-				} //end IF
-			} 	// for loop
-			Serial.flush();
-			*/
+			Serial.write((uint8_t*)packet_header,5);
+			Serial.write((uint8_t*)buffer,size);
 			break;
 
 		case HEX:
