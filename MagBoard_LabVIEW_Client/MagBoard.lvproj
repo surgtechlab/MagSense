@@ -19,9 +19,8 @@
 		<Property Name="server.vi.callsEnabled" Type="Bool">true</Property>
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
-		<Item Name="MagBoard_Monitor_n64_v1.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/MagBoard_Monitor_n64_v1.vi"/>
-		<Item Name="n64_generate_grid.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/subvis/n64_generate_grid.vi"/>
-		<Item Name="Process_Arduino_DataPacket.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/subvis/Process_Arduino_DataPacket.vi"/>
+		<Item Name="data_source.ctl" Type="VI" URL="../subvis/data_source.ctl"/>
+		<Item Name="MagBoard_Monitor_n64_v2.vi" Type="VI" URL="../../../../../OneDrive - University of Leeds/01_Research/Sense/Mag_Arduino/01_MagSense_Test_Code/MagBoard_LabVIEW_Client/MagBoard_Monitor_n64_v2.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="3D Bar Datatype.lvclass" Type="LVClass" URL="/&lt;vilib&gt;/Math Plots/3D Math Plots/3D Bar/3D Bar Datatype/3D Bar Datatype.lvclass"/>
