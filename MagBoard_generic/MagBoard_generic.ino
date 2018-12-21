@@ -61,6 +61,14 @@ void setup() {
   Wire1.setOpMode(I2C_OP_MODE_ISR);
   Wire2.setOpMode(I2C_OP_MODE_ISR);
   Wire3.setOpMode(I2C_OP_MODE_ISR);
+
+  //Make sure runnning at 400 kHz
+  Wire.setRate(I2C_RATE_400);
+  Wire1.setRate(I2C_RATE_400);
+  Wire2.setRate(I2C_RATE_400);
+  Wire3.setRate(I2C_RATE_400);
+
+  
   
 }
 

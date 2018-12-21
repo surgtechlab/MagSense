@@ -784,7 +784,7 @@ uint8_t MLX90393::measureReady(uint8_t i2cLine)
 	
 	//Has it finished transmitting the previous asynchronous requests?
 	//And are there the correct number of bytes available?
-	return (thisWire->finish() && thisWire->available());
+	return (thisWire->done());
 }
 
 //So you've requested, and you know there's bytes to be read, so go and read
@@ -818,7 +818,7 @@ uint8_t MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
 		receiveBuffer[bufIdx] = thisWire->read(); //xMag msb
     }
 	//The buffer is one too big! Woops!
-	receiveBuffer[8] = 0;
+	//receiveBuffer[8] = 0;
 	
 	//Everything went fine :)
 	return 0;
@@ -836,9 +836,15 @@ void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 	
 	WhichWire(i2cLine)->beginTransmission(_I2CAddress);	// Start I2C Transmission
 	WhichWire(i2cLine)->write(select);						// Read measurement command (ZXYT = 1111)
-	WhichWire(i2cLine)->endTransmission(I2C_NOSTOP);					// Stop I2C Transmission
-	WhichWire(i2cLine)->sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
+	WhichWire(i2cLine)->sendTransmission(I2C_NOSTOP);					// Stop I2C Transmission
 }
+
+void MLX90393::AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine){
+	while(!(WhichWire(i2cLine)->done()));
+	WhichWire(i2cLine)->sendRequest(_I2CAddress, 7,I2C_STOP);		// Request 9 bytes of data
+	//Serial.println("Have requested!");
+}
+
 
 void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 {
@@ -1124,4 +1130,9 @@ i2c_t3* MLX90393::WhichWire(uint8_t wireNo)
 			break;
 		}
 		
+}
+
+//Return address packet, depending on device
+int MLX90393::getAddress(void){
+	return _I2CAddress;
 }

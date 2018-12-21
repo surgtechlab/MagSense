@@ -61,7 +61,7 @@ void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zy
 	_address2 = (addressPackage & 0xFF00) >> 8;
 	_address3 = (addressPackage & 0xFF0000) >> 16;
 	_address4 = (addressPackage & 0xFF000000) >> 24;
-		
+	
 	nodeAddrObj[0].init(receiveBuffer, _address1, i2cLine);
 	nodeAddrObj[0].configure(receiveBuffer, i2cLine, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 	nodeAddrObj[0].startBurstMode(receiveBuffer, zyxt, i2cLine);
@@ -148,21 +148,40 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 			//We can delete about a billion lines of code by putting the mux
 			//control in a for loop
 			//Do all the requests first
-			unsigned int i2cSweep;
+			int i2cSweep;
 			for (i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
 			{
+				
 				//Now request for each sweep on that device
 				nodeAddrObj[devAddrIdx-1].RequestMeasurement(receiveBuffer, zyxt, i2cSweep);
+				
 			}
-								
+			
+			for (i2cSweep = 0; i2cSweep <= 3; i2cSweep++) //loop through the 4 i2C buses
+			{
+				nodeAddrObj[devAddrIdx-1].AsyncRxFill(receiveBuffer, zyxt, i2cSweep);
+			}
+				
+			
+			
 			//Requests all done so go and measure
 			for(i2cSweep = 0; i2cSweep <= 3; i2cSweep++)
 			{
+				//Temporary timing measurements
+				unsigned long startT = micros();
+
 				//While there's no bytes available to read, do nothing...
 				while(!nodeAddrObj[devAddrIdx-1].measureReady(i2cSweep));
-				//Okay this node address is ready, so go ahead and read into receive buf
-				nodeAddrObj[devAddrIdx-1].takeMeasure(receiveBuffer,i2cSweep);
 				
+				unsigned long stopT = micros();
+				
+				/* Serial.print("i2c bus: "); Serial.print(i2cSweep); Serial.print(" "); Serial.println(stopT-startT); */
+				
+				
+				//Okay this node address is ready, so go ahead and read into receive buf
+				
+				nodeAddrObj[devAddrIdx-1].takeMeasure(receiveBuffer,i2cSweep);
+
 				//Work out the address 
 				uint16_t packetOffset = i2cSweep * NODE_PER_MUX*NODE_N_BYTE;
 				//Based on the address of the mux too

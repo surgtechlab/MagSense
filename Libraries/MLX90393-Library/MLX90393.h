@@ -104,6 +104,10 @@ public:
 	uint8_t takeMeasure(char *receiveBuffer, int i2cLine);
 	uint8_t measureReady(uint8_t i2cLine);
 	
+	int getAddress(void);
+	
+	void AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine);
+	
 	
 
 private:
