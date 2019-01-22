@@ -1,0 +1,13 @@
+$HEADER$
+BOARD_TYPE PCB_DESIGN
+UNITS TH
+$END HEADER$
+
+$PART_SECTION_BEGIN$
+C1                               10uF                             45.00      -2.40      -1.90      BOTTOM     YES
+R1                               10k                              180.00     4.68       -2.99      BOTTOM     YES
+R2                               10k                              180.00     4.69       -4.09      BOTTOM     YES
+R3                               NOFIT                            315.00     0.44       -3.59      BOTTOM     YES
+R4                               NOFIT                            315.00     1.17       -2.84      BOTTOM     YES
+U1                               LDC1614                          45.00      0.01       -0.02      BOTTOM     YES
+$PART_SECTION_END$
