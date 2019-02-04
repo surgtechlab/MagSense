@@ -1,0 +1,13 @@
+G04 Gerber job file.*
+%TF.FileFunction,JobInfo*%
+%TF.GenerationSoftware,Autodesk,EAGLE,9.0.1*%
+%TF.CreationDate,2018-12-20T19:56:33Z*%
+%TF.Part,Single*%
+%MOMM*%
+%TJ.B_Owner,Chris Adams <autodesk@chrisada.co.uk>*%
+%TJ.B_ID,singleNode*%
+%TJ.B_LayerNum,4*%
+%TJ.B_Thickness,1.570000*%
+%TJ.B_Size_X,30.000000*%
+%TJ.B_Size_Y,30.000000*%
+M02*
