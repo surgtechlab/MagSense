@@ -33,7 +33,7 @@ void setup() {
   device.initCommunication(115200, 2);
   device.initCommunication(115200, 3);
   
-  Serial.println("\nMagBoard_64 v1 Performance Testing");
+  Serial.println("\nMagBoard_64 v2 Performance Testing");
   Serial.println("\nInitialised Serial Comms");
   delay(500);
   
@@ -54,7 +54,7 @@ void setup() {
 
   Serial.println("\nInitialised I2C Bus");
   delay(2000);
-  Serial.println("\nReading....\n\n");
+  Serial.println("\Entering Read Mode....\n\n");
 
   //i2c reads from hear onwards will be non-blocking
   Wire.setOpMode(I2C_OP_MODE_ISR);
@@ -67,9 +67,6 @@ void setup() {
   Wire1.setRate(I2C_RATE_400);
   Wire2.setRate(I2C_RATE_400);
   Wire3.setRate(I2C_RATE_400);
-
-  
-  
 }
 
 int timeMode = 0;
@@ -91,8 +88,7 @@ void loop() {
   }
   else{
 
-  Serial.print("Hello");
   device.printRawData(buffer, BIN, NODE_64);
   }
-  delay(100);
+  delay(50);
 }
