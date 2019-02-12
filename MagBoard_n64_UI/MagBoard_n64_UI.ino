@@ -1,4 +1,4 @@
-// MagBoard n64 UI Version
+ // MagBoard n64 UI Version
 ////////////////////////////////////
 // v1 of full platform by P Culmer
 // 
@@ -17,6 +17,8 @@ void comms_MainMenu();
 void comms_EstablishContact();
 void comms_SD_Status();
 void test_SD_datalog();
+void System_Stream();
+void System_Initialise(); //MOVE TO MAGLIB
 
 // MagLIB Defs
 MagLib device; //Change this to MLX for readability
@@ -46,9 +48,102 @@ const int chipSelect = BUILTIN_SDCARD;
 void setup() {
   
   Serial.begin(serial_baudrate);
-  comms_EstablishContact();
+  comms_EstablishContact();  
+}
 
+int timeMode = 0;
+
+void loop() {
+
+  comms_MainMenu();
   /*
+  startmicros = micros ();
+  device.read64Nodes(buffer, Select_ZYX);
+  currentmicros = micros ();
+  period = currentmicros - startmicros;
+
+  if (timeMode)
+  {
+  Serial.print("\nMagBoardv64. Read Time (uS):");
+  Serial.println(period);
+  
+  device.printASCIIData(buffer, NODE_64);
+  }
+  else{
+
+  device.printRawData(buffer, BIN, NODE_64);
+  }
+  delay(50);
+  */
+  
+}
+
+
+// COMMS FUNCTIONS DEFINED BELOW
+
+void comms_EstablishContact() {
+  
+  while (Serial.available() <= 0) {
+    delay(500);
+  }
+  Serial.println("!MagBoard n64 UI v12_02_2019");
+  Serial.print("^"); //End of text stream
+}
+
+void comms_MainMenu() {
+
+  if (Serial.available() > 0) {
+    int commsByte = Serial.read();
+  
+    switch (commsByte) {
+        case '>':
+          Serial.println("RDY");
+          break;
+        case 'I':
+          Serial.println("i");
+          System_Initialise();
+          Serial.print("^"); //End of text stream
+          break;
+        case 'C':
+          Serial.println("c");
+          comms_SystemCheck();
+          Serial.print("^"); //End of text stream
+          break;
+        case 'S':
+          Serial.println("s");
+          System_Stream();
+          //Serial.print("^"); //End of text stream
+          break;
+        case 'L':
+          Serial.println("Log Data");
+          test_SD_datalog();
+          break;
+        case 'X':
+          comms_EstablishContact();
+          break;
+        case '\n':
+          //Serial.println("NewLine"); //Ignore \n sent by Serial Monitors
+          break;
+        default:
+          // Unknown command - respond accordingly. RTFM
+          Serial.print("\n?");
+          }
+      }
+      else {
+        delay(1000);
+      }
+}
+
+
+void comms_SystemCheck() {
+  Serial.println("*System Status...");
+  Serial.println("*64 Nodes Active...");
+  Serial.println("*SD Storage...");
+  comms_SD_Status();
+}
+
+void System_Initialise() {
+ 
   //Initialise serial comms on ports 0-3
   device.initCommunication(115200, 0);
   device.initCommunication(115200, 1);
@@ -89,97 +184,29 @@ void setup() {
   Wire1.setRate(I2C_RATE_400);
   Wire2.setRate(I2C_RATE_400);
   Wire3.setRate(I2C_RATE_400);
-
-  */
-  
 }
 
-int timeMode = 0;
-
-void loop() {
-
-  comms_MainMenu();
-  /*
-  startmicros = micros ();
-  device.read64Nodes(buffer, Select_ZYX);
-  currentmicros = micros ();
-  period = currentmicros - startmicros;
-
-  if (timeMode)
-  {
-  Serial.print("\nMagBoardv64. Read Time (uS):");
-  Serial.println(period);
+void System_Stream() {
+  int commsByte = 0;
   
-  device.printASCIIData(buffer, NODE_64);
-  }
-  else{
-
-  device.printRawData(buffer, BIN, NODE_64);
-  }
-  delay(50);
-  */
+  do {
+    //0. Get reading
+    device.read64Nodes(buffer, Select_ZYX);
+    
+    //1. Print reading
+    device.printRawData(buffer, BIN, NODE_64);
   
-}
+    //2. Wait until a response character is sent
+    while (Serial.available() <= 0) {
+      //Serial.println("."); //for debug
+      delay(10);
+    }
 
-
-// COMMS FUNCTIONS DEFINED BELOW
-
-void comms_EstablishContact() {
-  
-  while (Serial.available() <= 0) {
-    Serial.print(">");
-    delay(1000);
-  }
-  
-}
-
-void comms_MainMenu() {
-
-  if (Serial.available() > 0) {
-    int commsByte = Serial.read();
-  
-    switch (commsByte) {
-        case '>':
-          Serial.println("RDY");
-          break;
-        case 'I':
-          Serial.println("Initialise");
-          break;
-        case 'C':
-          Serial.println("System Check");
-          comms_SystemCheck();
-          break;
-        case 'P':
-          Serial.println("Preview Data");
-          break;
-        case 'S':
-          Serial.println("Save Data");
-          test_SD_datalog();
-          break;
-        case 'X':
-          Serial.println("QUIT");
-          comms_EstablishContact();
-          break;
-        case '\n':
-          //Serial.println("NewLine"); //Ignore \n sent by Serial Monitors
-          break;
-        default:
-          // Unknown command - respond accordingly. RTFM
-          Serial.print("\n?");
-          }
-      }
-      else {
-        delay(1000);
-      }
-}
-
-
-void comms_SystemCheck() {
-  Serial.println(">TXT*Code: MagBoard n64 UI v05_02_2019");
-  Serial.println("*System Status...");
-  Serial.println("*64 Nodes Active...");
-  Serial.println("*SD Storage...");
-  comms_SD_Status();
+    //3. Read command from client (.=stop >=go)
+    commsByte = Serial.read();
+    //4. Confirm command recieved
+    Serial.print(commsByte,HEX);
+  } while (commsByte == 62); // 62=ASCII '>'
 }
 
 void comms_SD_Status() {

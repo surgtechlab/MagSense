@@ -29,6 +29,10 @@
 			<Item Name="MAG_Display_State.ctl" Type="VI" URL="../controls/MAG_Display_State.ctl"/>
 			<Item Name="MAG_UI_Command.ctl" Type="VI" URL="../controls/MAG_UI_Command.ctl"/>
 			<Item Name="Sensor_Data.ctl" Type="VI" URL="../controls/Sensor_Data.ctl"/>
+			<Item Name="MAG_UI_Comms_Config.ctl" Type="VI" URL="../controls/MAG_UI_Comms_Config.ctl"/>
+		</Item>
+		<Item Name="subVIs" Type="Folder" URL="../subVIs">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
 		<Item Name="MAG_UI_Main.vi" Type="VI" URL="../MAG_UI_Main.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
@@ -64,7 +68,11 @@
 				<Item Name="LVBoundsTypeDef.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/miscctls.llb/LVBoundsTypeDef.ctl"/>
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
 				<Item Name="GetHelpDir.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/GetHelpDir.vi"/>
+				<Item Name="VISA Configure Serial Port (Instr).vi" Type="VI" URL="/&lt;vilib&gt;/Instr/_visa.llb/VISA Configure Serial Port (Instr).vi"/>
+				<Item Name="VISA Configure Serial Port (Serial Instr).vi" Type="VI" URL="/&lt;vilib&gt;/Instr/_visa.llb/VISA Configure Serial Port (Serial Instr).vi"/>
+				<Item Name="VISA Configure Serial Port" Type="VI" URL="/&lt;vilib&gt;/Instr/_visa.llb/VISA Configure Serial Port"/>
 			</Item>
+			<Item Name="n64_shape_single_axis.vi" Type="VI" URL="../../../MagBoard_n64/MagBoard_LabVIEW_Client/subvis/n64_shape_single_axis.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
 			<Item Name="Main Application" Type="EXE">
