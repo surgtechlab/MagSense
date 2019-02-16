@@ -11,6 +11,8 @@
 #include <SD.h>
 #include <SPI.h>
 
+#define BTSerial Serial1 //This serial port is linked to the BT transmitter
+
 //Declare comms Functions - move to external library later
 void comms_SystemCheck();
 void comms_MainMenu();
@@ -24,6 +26,7 @@ void System_Initialise(); //MOVE TO MAGLIB
 MagLib device; //Change this to MLX for readability
 #define addressPacket 0x0F0E0D0C
 char buffer[NODE_64];
+char stream_packet_header[5];
 int mux[2] = {10, 11};
 uint8_t Select_ZYX = 0xE;
 //CHIP SETTINGS
@@ -44,10 +47,13 @@ Sd2Card card;
 SdVolume volume;
 SdFile root;
 const int chipSelect = BUILTIN_SDCARD; 
+int BTSerial_baudrate = 57600;
+
 
 void setup() {
   
   Serial.begin(serial_baudrate);
+  BTSerial.begin(BTSerial_baudrate);
   comms_EstablishContact();  
 }
 
@@ -56,26 +62,7 @@ int timeMode = 0;
 void loop() {
 
   comms_MainMenu();
-  /*
-  startmicros = micros ();
-  device.read64Nodes(buffer, Select_ZYX);
-  currentmicros = micros ();
-  period = currentmicros - startmicros;
 
-  if (timeMode)
-  {
-  Serial.print("\nMagBoardv64. Read Time (uS):");
-  Serial.println(period);
-  
-  device.printASCIIData(buffer, NODE_64);
-  }
-  else{
-
-  device.printRawData(buffer, BIN, NODE_64);
-  }
-  delay(50);
-  */
-  
 }
 
 
@@ -83,46 +70,48 @@ void loop() {
 
 void comms_EstablishContact() {
   
-  while (Serial.available() <= 0) {
+  while (BTSerial.available() <= 0) {
     delay(500);
   }
-  Serial.println("!MagBoard n64 UI v12_02_2019");
-  Serial.print("^"); //End of text stream
+  BTSerial.println("!MagBoard n64 UI v16_02_2019");
+  BTSerial.print("^"); //End of text stream
+  Serial.println("Connection Made");
 }
 
 void comms_MainMenu() {
 
-  if (Serial.available() > 0) {
-    int commsByte = Serial.read();
-  
+  if (BTSerial.available() > 0) {
+    int commsByte = BTSerial.read();
+    Serial.print("\nCommand Recieved:");
+    Serial.println(commsByte);
+    
     switch (commsByte) {
         case '>':
-          Serial.println("RDY");
+          BTSerial.println("RDY");
           break;
         case 'I':
-          Serial.println("i");
+          BTSerial.println("i");
           System_Initialise();
-          Serial.print("^"); //End of text stream
+          BTSerial.print("^"); //End of text stream
           break;
         case 'C':
-          Serial.println("c");
+          BTSerial.println("c");
           comms_SystemCheck();
-          Serial.print("^"); //End of text stream
+          BTSerial.print("^"); //End of text stream
           break;
         case 'S':
-          Serial.println("s");
+          BTSerial.println("s");
           System_Stream();
           //Serial.print("^"); //End of text stream
           break;
         case 'L':
-          Serial.println("Log Data");
+          BTSerial.println("Log Data");
           test_SD_datalog();
           break;
         case 'X':
           comms_EstablishContact();
           break;
         case '\n':
-          //Serial.println("NewLine"); //Ignore \n sent by Serial Monitors
           break;
         default:
           // Unknown command - respond accordingly. RTFM
@@ -136,23 +125,22 @@ void comms_MainMenu() {
 
 
 void comms_SystemCheck() {
-  Serial.println("*System Status...");
-  Serial.println("*64 Nodes Active...");
-  Serial.println("*SD Storage...");
+  BTSerial.println("*System Status...");
+  BTSerial.println("*64 Nodes Active...");
+  BTSerial.println("*SD Storage...");
   comms_SD_Status();
 }
 
 void System_Initialise() {
  
+  BTSerial.println("\nStarting System Initialisation");
+  
+  Serial.println("\nInitialising I2C Bus...");
   //Initialise serial comms on ports 0-3
   device.initCommunication(115200, 0);
   device.initCommunication(115200, 1);
   device.initCommunication(115200, 2);
   device.initCommunication(115200, 3);
-  
-  Serial.println("\nMagBoard_64 v2 Performance Testing");
-  Serial.println("\nInitialised Serial Comms");
-  delay(500);
   
   //Configure MUX enable pins (Enable is Low)
   pinMode(5,OUTPUT);
@@ -170,8 +158,9 @@ void System_Initialise() {
   device.init64Nodes(addressPacket, buffer, Select_ZYX, mux, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 
   Serial.println("\nInitialised I2C Bus");
-  delay(2000);
-  Serial.println("\Entering Read Mode....\n\n");
+  BTSerial.println("\nInitialised I2C Bus");
+
+  delay(500);
 
   //i2c reads from hear onwards will be non-blocking
   Wire.setOpMode(I2C_OP_MODE_ISR);
@@ -184,59 +173,73 @@ void System_Initialise() {
   Wire1.setRate(I2C_RATE_400);
   Wire2.setRate(I2C_RATE_400);
   Wire3.setRate(I2C_RATE_400);
+
+  Serial.println("\nSystem Active");
+  BTSerial.println("\nSystem Active");
 }
 
 void System_Stream() {
   int commsByte = 0;
+  int packet_size = NODE_64;
   
   do {
     //0. Get reading
     device.read64Nodes(buffer, Select_ZYX);
     
     //1. Print reading
-    device.printRawData(buffer, BIN, NODE_64);
+    //device.printRawData(buffer, BIN, NODE_64); //disable function call for now
+      //Define the header of binary packets sent
+        stream_packet_header[0] = 0x0A;
+        stream_packet_header[1] = 0x0B;
+        stream_packet_header[2] = 0x0C;
+        stream_packet_header[3] = packet_size & 0xFF;
+        stream_packet_header[4] = (packet_size>>8) & 0xFF;
+
+      BTSerial.write(stream_packet_header,5);
+      BTSerial.write(buffer,NODE_64);
   
     //2. Wait until a response character is sent
-    while (Serial.available() <= 0) {
+    while (BTSerial.available() <= 0) {
       //Serial.println("."); //for debug
       delay(10);
     }
 
     //3. Read command from client (.=stop >=go)
-    commsByte = Serial.read();
+    commsByte = BTSerial.read();
     //4. Confirm command recieved
-    Serial.print(commsByte,HEX);
+    BTSerial.print(commsByte,HEX);
   } while (commsByte == 62); // 62=ASCII '>'
+  Serial.println("\nStreaming Stopped");
 }
 
 void comms_SD_Status() {
 
     if (!card.init(SPI_HALF_SPEED, chipSelect)) {
-    Serial.println("No SD Card Found!");
+    BTSerial.println("No SD Card Found!");
     return;
   } else {
-   Serial.println("SD Card Found"); 
+   BTSerial.println("SD Card Found"); 
   }
 
   // print the type of card
-  Serial.print("Type:");
+  BTSerial.print("Type:");
   switch(card.type()) {
     case SD_CARD_TYPE_SD1:
-      Serial.println("SD1");
+      BTSerial.println("SD1");
       break;
     case SD_CARD_TYPE_SD2:
-      Serial.println("SD2");
+      BTSerial.println("SD2");
       break;
     case SD_CARD_TYPE_SDHC:
-      Serial.println("SDHC");
+      BTSerial.println("SDHC");
       break;
     default:
-      Serial.println("Unknown");
+      BTSerial.println("Unknown");
   }
 
   // Now we will try to open the 'volume'/'partition' - it should be FAT16 or FAT32
   if (!volume.init(card)) {
-    Serial.println("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card");
+    BTSerial.println("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card");
     return;
   }
 
@@ -244,17 +247,17 @@ void comms_SD_Status() {
   uint32_t volumesize;
   uint32_t blocksPerCluster;
   uint32_t freevolumesize;
-  Serial.print("Volume Type: FAT");
-  Serial.println(volume.fatType(), DEC);
+  BTSerial.print("Volume Type: FAT");
+  BTSerial.println(volume.fatType(), DEC);
   
   blocksPerCluster = volume.blocksPerCluster();    // clusters are collections of blocks
   volumesize = volume.clusterCount() * blocksPerCluster; 
-  Serial.print("Volume size (Kbytes): ");
+  BTSerial.print("Volume size (Kbytes): ");
   volumesize /= 2;
-  Serial.println(volumesize);
-  Serial.print("Volume size (Mbytes): ");
+  BTSerial.println(volumesize);
+  BTSerial.print("Volume size (Mbytes): ");
   volumesize /= 1024;
-  Serial.println(volumesize);
+  BTSerial.println(volumesize);
   
   Serial.println("\nFiles found on the card (name, date and size in bytes): ");
   root.openRoot(volume);
