@@ -12,6 +12,7 @@
 #include <SPI.h>
 
 #define BTSerial Serial1 //This serial port is linked to the BT transmitter
+//#define BTSerial Serial //This serial port is linked to the BT transmitter
 
 //Declare comms Functions - move to external library later
 void comms_SystemCheck();
@@ -47,7 +48,7 @@ Sd2Card card;
 SdVolume volume;
 SdFile root;
 const int chipSelect = BUILTIN_SDCARD; 
-int BTSerial_baudrate = 57600;
+int BTSerial_baudrate = 115200;
 
 
 void setup() {
