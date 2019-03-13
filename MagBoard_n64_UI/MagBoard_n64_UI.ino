@@ -55,6 +55,9 @@ void setup() {
   
   Serial.begin(serial_baudrate);
   BTSerial.begin(BTSerial_baudrate);
+  delay(2000);
+  Serial.println("MagBOARD is Alive!");
+  Serial.println("Waiting for connection....");
   comms_EstablishContact();  
 }
 
@@ -72,6 +75,7 @@ void loop() {
 void comms_EstablishContact() {
   
   while (BTSerial.available() <= 0) {
+    Serial.println("Waiting...");
     delay(500);
   }
   BTSerial.println("!MagBoard n64 UI v16_02_2019");
@@ -84,7 +88,7 @@ void comms_MainMenu() {
   if (BTSerial.available() > 0) {
     int commsByte = BTSerial.read();
     Serial.print("\nCommand Recieved:");
-    Serial.println(commsByte);
+    Serial.print(commsByte);
     
     switch (commsByte) {
         case '>':
@@ -116,7 +120,7 @@ void comms_MainMenu() {
           break;
         default:
           // Unknown command - respond accordingly. RTFM
-          Serial.print("\n?");
+          Serial.println("?");
           }
       }
       else {
