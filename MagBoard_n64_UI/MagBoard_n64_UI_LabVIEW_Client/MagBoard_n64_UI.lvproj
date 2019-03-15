@@ -31,6 +31,7 @@
 			<Item Name="MAG_UI_Command.ctl" Type="VI" URL="../controls/MAG_UI_Command.ctl"/>
 			<Item Name="Sensor_Data.ctl" Type="VI" URL="../controls/Sensor_Data.ctl"/>
 			<Item Name="MAG_UI_Comms_Config.ctl" Type="VI" URL="../controls/MAG_UI_Comms_Config.ctl"/>
+			<Item Name="BT_Devices.ctl" Type="VI" URL="../controls/BT_Devices.ctl"/>
 		</Item>
 		<Item Name="subVIs" Type="Folder" URL="../subVIs">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
@@ -85,6 +86,8 @@
 				<Item Name="NI_AALPro.lvlib" Type="Library" URL="/&lt;vilib&gt;/Analysis/NI_AALPro.lvlib"/>
 				<Item Name="Surface.lvclass" Type="LVClass" URL="/&lt;vilib&gt;/Native 3D Graph/classes/Surface/Surface.lvclass"/>
 				<Item Name="Parametric.lvclass" Type="LVClass" URL="/&lt;vilib&gt;/Native 3D Graph/classes/Parametric/Parametric.lvclass"/>
+				<Item Name="Bluetooth Generate Error Cluster.vi" Type="VI" URL="/&lt;vilib&gt;/Platform/Bluetooth.llb/Bluetooth Generate Error Cluster.vi"/>
+				<Item Name="Bluetooth RFCOMM Service Discovery.vi" Type="VI" URL="/&lt;vilib&gt;/Platform/Bluetooth.llb/Bluetooth RFCOMM Service Discovery.vi"/>
 			</Item>
 			<Item Name="n64_shape_single_axis.vi" Type="VI" URL="../../../MagBoard_n64/MagBoard_LabVIEW_Client/subvis/n64_shape_single_axis.vi"/>
 			<Item Name="lvanlys.dll" Type="Document" URL="/&lt;resource&gt;/lvanlys.dll"/>

@@ -96,21 +96,25 @@ void comms_MainMenu() {
           break;
         case 'I':
           BTSerial.println("i");
+          Serial.println("Initialise System");
           System_Initialise();
           BTSerial.print("^"); //End of text stream
           break;
         case 'C':
           BTSerial.println("c");
+          Serial.println("Check System");
           comms_SystemCheck();
           BTSerial.print("^"); //End of text stream
           break;
         case 'S':
           BTSerial.println("s");
+          Serial.println("Stream Data");
           System_Stream();
           //Serial.print("^"); //End of text stream
           break;
         case 'L':
-          BTSerial.println("Log Data");
+          BTSerial.println("l");
+          Serial.println("Data Logging");
           test_SD_datalog();
           break;
         case 'X':
@@ -206,13 +210,13 @@ void System_Stream() {
     //2. Wait until a response character is sent
     while (BTSerial.available() <= 0) {
       //Serial.println("."); //for debug
-      delay(10);
+      delay(1);
     }
 
     //3. Read command from client (.=stop >=go)
     commsByte = BTSerial.read();
     //4. Confirm command recieved
-    BTSerial.print(commsByte,HEX);
+    BTSerial.print(commsByte);
   } while (commsByte == 62); // 62=ASCII '>'
   Serial.println("\nStreaming Stopped");
 }
