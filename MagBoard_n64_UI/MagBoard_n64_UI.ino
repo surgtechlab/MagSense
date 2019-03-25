@@ -31,7 +31,7 @@ char stream_packet_header[5];
 int mux[2] = {10, 11};
 uint8_t Select_ZYX = 0xE;
 //CHIP SETTINGS
-uint8_t GAIN_SEL = 0x00;  // 
+uint8_t GAIN_SEL = 0x03;  // 
 uint8_t RES_XYZ = 0x00;  // 0x15=gain 1
 uint8_t DIG_FILT = 0x1;
 uint8_t OSR = 0x1;
