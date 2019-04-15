@@ -8,6 +8,7 @@
  * Note: Apps should create a very large file then truncates it
  * to the length that is used for a logging. It only takes
  * a few seconds to erase a 500 MB file since the card only
+ * marks the blocks as erased; no data transfer is required.
  */
 #include <SPI.h>
 #include "SdFat.h"
