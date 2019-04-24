@@ -255,6 +255,7 @@ void MagLib::printASCIIData(char *buffer, int size)
 	Serial.print("\n");
 }
 
+/*
 void MagLib::initSDCard(int chipSelect)
 {
 	if (!SD.begin(chipSelect)) {
@@ -265,8 +266,6 @@ void MagLib::initSDCard(int chipSelect)
 
 	SDCard = true;
 
-	/*
-	
 
 	char fileTitle[1024];
 	const char *format = "data_%i.txt";
@@ -281,12 +280,15 @@ void MagLib::initSDCard(int chipSelect)
 		}
 		else break;
 	}
-	*/
+
 	File datafile = SD.open("test1243533.txt", FILE_WRITE);
 
 	Serial.println("SD Card init complete");
-}
 
+}
+*/
+
+/*
 void MagLib::printToSDCard(char *buffer, int size)
 {
 	if (!SDCard) {
@@ -316,6 +318,8 @@ void MagLib::closeSDCard()
 
 	Serial.println("SD Card closed.");
 }
+
+*/
 
 /*There's two versions of setMux to maintain compatibility
 * This is the original one that takes two arguments...

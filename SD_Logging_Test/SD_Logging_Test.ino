@@ -190,7 +190,6 @@ void loop() {
 
   Serial.println("\nFile Listing");
   sd.ls(LS_R | LS_DATE | LS_SIZE); //Print file listing
-
     
 //------------------------------------------------------------------------------
 // READ test

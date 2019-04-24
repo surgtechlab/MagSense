@@ -1,25 +1,31 @@
  // MagBoard n64 UI Version
 ////////////////////////////////////
-// v1 of full platform by P Culmer
+// v1 of full platform by Pete Culmer
 // 
 ///////////////////////////////////
 
-// include MagLIB - for access to high and low level chip functions
+//include MagLIB - for access to high and low level chip functions
 #include <MagLib.h>
 
 // include the SD library:
-#include <SD.h>
 #include <SPI.h>
 
-#define BTSerial Serial1 //This serial port is linked to the BT transmitter
-//#define BTSerial Serial //This serial port is linked to the BT transmitter
+//include support for SD file writes
+#include "SdFat.h"
+#include "sdios.h"
+#include "FreeStack.h"
+
+//
+bool simulate_board = true;
 
 //Declare comms Functions - move to external library later
 void comms_SystemCheck();
 void comms_MainMenu();
 void comms_EstablishContact();
 void comms_SD_Status();
+void SD_datalog();
 void test_SD_datalog();
+void SD_upload();
 void System_Stream();
 void System_Initialise(); //MOVE TO MAGLIB
 
@@ -31,44 +37,69 @@ char stream_packet_header[5];
 int mux[2] = {10, 11};
 uint8_t Select_ZYX = 0xE;
 //CHIP SETTINGS
-uint8_t GAIN_SEL = 0x03;  // 
+uint8_t GAIN_SEL = 0x00;  // 
 uint8_t RES_XYZ = 0x00;  // 0x15=gain 1
 uint8_t DIG_FILT = 0x1;
 uint8_t OSR = 0x1;
 
-// TIMING Settings
-unsigned long start_time = 0L;
-unsigned long current_time = 0L;
-unsigned long period = 0L;
-
 //COMMS SETTINGS //see SD library Example (from Teensy)
 int serial_baudrate = 115200;
-//SD Card Settings
-Sd2Card card;
-SdVolume volume;
-SdFile root;
-const int chipSelect = BUILTIN_SDCARD; 
+#define BTSerial Serial1 //This serial port is linked to the BT transmitter
 int BTSerial_baudrate = 115200;
+const int ledPin = 13; //used to signify comms
+bool status_led = false;
 
+//SD LOGGING Settings
+const size_t SD_BUF_SIZE = 512; // Size of SD card read/write buffer
+uint32_t loop_dt = 10000; //loop dT in micro secs (100Hz)
+const uint32_t FILE_SIZE_MB = 5;
+const uint32_t FILE_SIZE = 1000000UL*FILE_SIZE_MB;
+char SDbuf[SD_BUF_SIZE];
+SdFatSdioEX sd; // File system
+SdFile file; // Log file
+char filename[] = "M064_XYZ.dat"; //base filename
 
 void setup() {
   
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  //Initiate USB Serial + BT comms
   Serial.begin(serial_baudrate);
   BTSerial.begin(BTSerial_baudrate);
-  delay(2000);
-  Serial.println("MagBOARD is Alive!");
-  Serial.println("Waiting for connection....");
-  comms_EstablishContact();  
-}
 
-int timeMode = 0;
+  //Wait for USB Serial to be available
+  while (!Serial) {
+    delay(10);
+  }
+  digitalWrite(ledPin, HIGH); //Signify when Comms active
+  delay(1000);
+  digitalWrite(ledPin, LOW);
+  
+  Serial.println("MagBOARD is Alive!"); //Signify system active and print version info
+  Serial.println(__FILE__);
+  Serial.println(__DATE__);
+  Serial.println(__TIME__);
+  
+  //Begin the SdFAT file process
+  if (!sd.begin()) {
+    sd.initErrorHalt();
+    Serial.println("ERROR: SD Card Initialisation");
+  }
+  else{
+    Serial.println("SD Card Initialised\n");
+  }
+
+  Serial.println("Waiting for BT connection");
+  comms_EstablishContact();  
+} 
+//END SETUP ****************************************************************
 
 void loop() {
 
   comms_MainMenu();
-
 }
-
+//END LOOP *****************************************************************
 
 // COMMS FUNCTIONS DEFINED BELOW
 
@@ -78,44 +109,54 @@ void comms_EstablishContact() {
     Serial.println("Waiting...");
     delay(500);
   }
-  BTSerial.println("!MagBoard n64 UI v16_02_2019");
+  BTSerial.print("!MagBoard n64 v:");
+  BTSerial.print(" ");
+  BTSerial.print(__DATE__);
+  BTSerial.print(" ");
+  BTSerial.print(__TIME__);
   BTSerial.print("^"); //End of text stream
   Serial.println("Connection Made");
 }
 
 void comms_MainMenu() {
-
+  //Serial.println("M");
   if (BTSerial.available() > 0) {
     int commsByte = BTSerial.read();
     Serial.print("\nCommand Recieved:");
     Serial.print(commsByte);
+    Serial.print(" ");
     
     switch (commsByte) {
         case '>':
-          BTSerial.println("RDY");
+          BTSerial.print("RDY");
           break;
         case 'I':
-          BTSerial.println("i");
+          BTSerial.print("i");
           Serial.println("Initialise System");
           System_Initialise();
           BTSerial.print("^"); //End of text stream
           break;
         case 'C':
-          BTSerial.println("c");
-          Serial.println("Check System");
+          BTSerial.print("c");
+          Serial.println("Check SD Card");
           comms_SystemCheck();
           BTSerial.print("^"); //End of text stream
           break;
         case 'S':
-          BTSerial.println("s");
+          BTSerial.print("s");
           Serial.println("Stream Data");
           System_Stream();
           //Serial.print("^"); //End of text stream
           break;
         case 'L':
-          BTSerial.println("l");
+          BTSerial.print("l");
           Serial.println("Data Logging");
-          test_SD_datalog();
+          SD_datalog();
+          break;
+        case 'G': //get datafile
+          BTSerial.print("g");
+          Serial.println("Upload SD file");
+          SD_upload();
           break;
         case 'X':
           comms_EstablishContact();
@@ -129,14 +170,13 @@ void comms_MainMenu() {
       }
       else {
         delay(1000);
+        status_led = !status_led;
+        digitalWrite(ledPin, status_led); //Toggle LED output
       }
 }
 
-
 void comms_SystemCheck() {
-  BTSerial.println("*System Status...");
-  BTSerial.println("*64 Nodes Active...");
-  BTSerial.println("*SD Storage...");
+  test_SD_datalog();
   comms_SD_Status();
 }
 
@@ -145,7 +185,10 @@ void System_Initialise() {
   BTSerial.println("\nStarting System Initialisation");
   
   Serial.println("\nInitialising I2C Bus...");
-  //Initialise serial comms on ports 0-3
+  
+  if (!simulate_board)
+  {
+  //Initialise I2C on ports 0-3
   device.initCommunication(115200, 0);
   device.initCommunication(115200, 1);
   device.initCommunication(115200, 2);
@@ -183,6 +226,11 @@ void System_Initialise() {
   Wire2.setRate(I2C_RATE_400);
   Wire3.setRate(I2C_RATE_400);
 
+  } //END IF
+  else{ //SIMULATE INIT PROCESS
+    //Simulate initialisation delay
+    delay(2000);
+  }
   Serial.println("\nSystem Active");
   BTSerial.println("\nSystem Active");
 }
@@ -190,13 +238,26 @@ void System_Initialise() {
 void System_Stream() {
   int commsByte = 0;
   int packet_size = NODE_64;
+  unsigned long time = 0;
   
   do {
     //0. Get reading
-    device.read64Nodes(buffer, Select_ZYX);
-    
+      if (!simulate_board)
+      {
+        //TAKE READING FROM MAGBOARD
+        device.read64Nodes(buffer, Select_ZYX);
+      }
+      else //SIMULATE DEVICE READ
+      {
+          time = millis();
+          buffer[0] = time & 255;
+          buffer[1] = (time>>8) & 255;
+          buffer[2] = (time>>16) & 255;
+          buffer[3] = (time>>24) & 255;
+          delay(3);
+      }
+      
     //1. Print reading
-    //device.printRawData(buffer, BIN, NODE_64); //disable function call for now
       //Define the header of binary packets sent
         stream_packet_header[0] = 0x0A;
         stream_packet_header[1] = 0x0B;
@@ -209,7 +270,6 @@ void System_Stream() {
   
     //2. Wait until a response character is sent
     while (BTSerial.available() <= 0) {
-      //Serial.println("."); //for debug
       delay(1);
     }
 
@@ -223,109 +283,220 @@ void System_Stream() {
 
 void comms_SD_Status() {
 
-    if (!card.init(SPI_HALF_SPEED, chipSelect)) {
-    BTSerial.println("No SD Card Found!");
+  //Print Card Information
+  BTSerial.print("FS Type is FAT");
+  BTSerial.print(int(sd.vol()->fatType()) );
+  BTSerial.print("\nCard Size (GB):");
+  BTSerial.print( sd.card()->cardSize()*512E-9 );
+  //BTSerial.print("\nLog File Size (MB):");
+  //BTSerial.print( FILE_SIZE_MB );
+  BTSerial.print("\n\n***SD Card Contents***\n");
+
+  sd.ls(&BTSerial, "/", LS_R | LS_SIZE ); //SD file listing to BT
+  sd.ls(LS_R | LS_DATE | LS_SIZE); //SD file listing to Serial
+  
+}
+
+void SD_datalog()
+{
+  char input_byte;
+  uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
+  uint32_t num_writes = 0;
+  uint32_t m = 0; //microsec clock value (to regulate loop)
+  uint32_t m_last = 0;
+  uint32_t log_start_time;
+  uint32_t log_elapsed_time;
+  int32_t write_size;
+  
+  //Define packet end
+  SDbuf[SD_BUF_SIZE-3] = 'X';
+  SDbuf[SD_BUF_SIZE-2] = 'Y';
+  SDbuf[SD_BUF_SIZE-1] = 'Z';
+  //**********************************************
+  
+  //Set log-filename - Uses 8.3 name format
+  while (BTSerial.available() < 3) { 
+    delay(10);
+  }
+  filename[5] = BTSerial.read();
+  filename[6] = BTSerial.read();
+  filename[7] = BTSerial.read();
+
+  Serial.print("\nLogging. Filename=");
+  Serial.println(filename);
+
+  // Create file (truncate existing file)
+  if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
+    Serial.println("ERROR: file open failed");
+    BTSerial.print("E");
     return;
-  } else {
-   BTSerial.println("SD Card Found"); 
   }
-
-  // print the type of card
-  BTSerial.print("Type:");
-  switch(card.type()) {
-    case SD_CARD_TYPE_SD1:
-      BTSerial.println("SD1");
-      break;
-    case SD_CARD_TYPE_SD2:
-      BTSerial.println("SD2");
-      break;
-    case SD_CARD_TYPE_SDHC:
-      BTSerial.println("SDHC");
-      break;
-    default:
-      BTSerial.println("Unknown");
+  else{
+    file.truncate(0); //file with 0 bytes and absolutely no contents in it
+    Serial.println("\nLogging. File open OK");
   }
+  digitalWrite(ledPin, HIGH); //Set StatusLED ON during write
 
-  // Now we will try to open the 'volume'/'partition' - it should be FAT16 or FAT32
-  if (!volume.init(card)) {
-    BTSerial.println("Could not find FAT16/FAT32 partition.\nMake sure you've formatted the card");
+  //*** LOGGING LOOP ******************
+  log_start_time = millis();
+  for (uint32_t i = 0; i < max_writes; i++) {
+        m = micros(); //read time
+        device.read64Nodes(SDbuf, Select_ZYX); //take reading
+		    Serial.println("\n**************Buffer:");
+		    Serial.write(SDbuf,SD_BUF_SIZE);
+        write_size = file.write(SDbuf, SD_BUF_SIZE);
+        Serial.print("\nWrite size:");
+        Serial.print(write_size);
+
+		if (write_size != SD_BUF_SIZE) {
+        sd.errorPrint("write failed");
+        //file.close();
+        //return;
+      }
+      m = micros() - m;
+
+      //Test to see if 
+      if (BTSerial.available())
+      {
+        input_byte = BTSerial.read();
+		break;
+      }
+
+      //Regulate loop rate here*
+      do {
+        delay(1);
+        m =  micros();       
+      } while ( (m - m_last) < loop_dt);
+      m_last = m;
+      //************************
+      
+      num_writes = i;
+    } //End write loop *****************
+
+    digitalWrite(ledPin, LOW);
+    file.sync();
+	  log_elapsed_time = millis() - log_start_time;
+	  file.close();
+
+    Serial.print("\nWrite Stopped at cycle ");
+    Serial.print(num_writes);
+    Serial.print(" of ");
+    Serial.println(max_writes);
+    
+  //Print Performance Information to USB Serial
+  Serial.print("\nAverage Loop Time (ms): ");
+  Serial.println( log_elapsed_time/num_writes );
+  BTSerial.print("~");
+}
+
+void SD_upload()
+{
+	float logfile_size;
+	uint32_t nr;
+	
+	Serial.print("\nGetting Filename...");
+	//Set log-filename - Uses 8.3 name format
+	while (BTSerial.available() < 3) { 
+		delay(10);
+	}
+	filename[5] = BTSerial.read();
+	filename[6] = BTSerial.read();
+	filename[7] = BTSerial.read();
+
+	Serial.print("\nUpload. Filename=");
+	Serial.println(filename);
+
+  // Create file (truncate existing file)
+  if (!file.open(filename, O_RDONLY)) { 
+    Serial.println("ERROR: file open failed");
     return;
   }
+  else{
+    Serial.println("\nUpload. File open OK");
+  }
+  logfile_size = file.fileSize();
+  Serial.print("\nLog Filesize = ");
+  Serial.println(logfile_size);
+  BTSerial.println(logfile_size);
+  
+  digitalWrite(ledPin, HIGH); //Set StatusLED ON during write
+  
+  while ((nr = file.read(SDbuf, SD_BUF_SIZE)) > 0) {
+    if (nr < SD_BUF_SIZE){ 
+              //End of file
+			  SDbuf[0] = 0xFF;
+			  SDbuf[1] = 0xFF;
+			  SDbuf[2] = 0xFF;
+			  BTSerial.write(SDbuf,SD_BUF_SIZE);
+			  return;
+    }
+    else { 
+              BTSerial.write(SDbuf,SD_BUF_SIZE);
+		}
+  } //END READ LOOP ********
+	
+	file.close();  
+	digitalWrite(ledPin, LOW); //Set StatusLED ON during write
 
-  // print the type and size of the first FAT-type volume
-  uint32_t volumesize;
-  uint32_t blocksPerCluster;
-  uint32_t freevolumesize;
-  BTSerial.print("Volume Type: FAT");
-  BTSerial.println(volume.fatType(), DEC);
-  
-  blocksPerCluster = volume.blocksPerCluster();    // clusters are collections of blocks
-  volumesize = volume.clusterCount() * blocksPerCluster; 
-  BTSerial.print("Volume size (Kbytes): ");
-  volumesize /= 2;
-  BTSerial.println(volumesize);
-  BTSerial.print("Volume size (Mbytes): ");
-  volumesize /= 1024;
-  BTSerial.println(volumesize);
-  
-  Serial.println("\nFiles found on the card (name, date and size in bytes): ");
-  root.openRoot(volume);
-  
-  // list all files in the card with date and size
-  root.ls(LS_R | LS_DATE | LS_SIZE);
 }
 
 void test_SD_datalog()
 {
-  char filename[] = "MagTest64_1.data";
-  // open the file
-  Serial.println("Datalogging Test");
+  uint32_t max_writes = 100; //number of writes to test SD file
+  uint32_t num_writes = 0;
+  int32_t write_size;
+  
+  //Define packet end
+  SDbuf[SD_BUF_SIZE-3] = 'X';
+  SDbuf[SD_BUF_SIZE-2] = 'Y';
+  SDbuf[SD_BUF_SIZE-1] = 'Z';
+  //**********************************************
+  
+  filename[5] = 'T';
+  filename[6] = 'S';
+  filename[7] = 'T';
 
-  Serial.print("Initializing SD card...");
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
+  Serial.print("\nLogging Test: Filename=");
+  Serial.println(filename);
+
+  // Create file (truncate existing file)
+  if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
+    Serial.println("ERROR: file open failed");
+    BTSerial.print("E");
     return;
   }
-  Serial.println("SD card initialized.");
-  
-  File dataFile = SD.open("test.dat", O_WRITE | O_CREAT);
+  else{
+    file.truncate(0); //file with 0 bytes and absolutely no contents in it
+    Serial.println("\nLogging. File open OK");
+    BTSerial.println("SD Logging Test. File open OK");
+  }
+  digitalWrite(ledPin, HIGH); //Set StatusLED ON during write
 
-  // Check if the file is available...
-  if (dataFile) {
-    Serial.println("Starting 1000 Writes:");
-    //if yes test write performance
+  //*** LOGGING LOOP ******************
+  for (uint32_t i = 0; i < max_writes; i++) {
+        Serial.write(SDbuf,SD_BUF_SIZE);
+        write_size = file.write(SDbuf, SD_BUF_SIZE);
+        Serial.print("\nWrite size:");
+        Serial.print(write_size);
 
-    //Loop to test 1000 writes
-
-    start_time = micros ();
-    for (int i=0;i<1000;i++) {
-        current_time = millis();
-        buffer[0] = current_time & 255;
-        buffer[1] = (current_time>>8) & 255;
-        buffer[2] = (current_time>>16) & 255;
-        buffer[3] = (current_time>>24) & 255;
-      if (NODE_64 != dataFile.write(buffer,NODE_64) ) {
-        Serial.println("Write failed");
-      return;
+    if (write_size != SD_BUF_SIZE) {
+        sd.errorPrint("write failed");
+        //file.close();
+        break;
       }
-    }
-    dataFile.close();
-    current_time = micros ();
-    period = current_time - start_time;
-    // Report outcome:
-    Serial.println("Total Time for 1000 cycles (uS):");
-    Serial.println(period);
-    Serial.println("Avg Time per cycle (uS):");
-    Serial.println(period/1000);
-    Serial.println("Max Write Freq (Hz):");
-    Serial.println( (1000000000/period));    
-  } 
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("Error opening file");
-  } 
 
+      delay(10);
+      //************************
+      
+      num_writes = i;
+    } //End write loop *****************
+
+    digitalWrite(ledPin, LOW);
+    file.sync();
+    file.close();
+
+    BTSerial.print("SD Logging Test. Written ");
+    BTSerial.print(num_writes);
+    BTSerial.print(" of ");
+    BTSerial.println(max_writes);
 }
-
-

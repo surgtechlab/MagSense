@@ -10,7 +10,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef MAGLIB_H
 #define MAGLIB_H
 
-#include <SD.h>
+//#include <SD.h>
 #include <SPI.h>
 #include "MLX90393.h"
 
@@ -141,7 +141,7 @@ private:
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
 	char packet_header[5]; // Used to denote start of binary data packet
 
-	File file;			/** File object used to write data to SD card. */
+	//File file;			/** File object used to write data to SD card. */
 
 	//An array of objects that contain the correct addressing for each node
 	MLX90393 nodeAddrObj[NADDR];
