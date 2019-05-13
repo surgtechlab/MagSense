@@ -124,13 +124,20 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	uint8_t upper_reg0 = 0x00; 
 	uint8_t lower_reg0 = 0x00; 
  
-	//Register 1: BURST_SEL = 1110(ZYX-), BURST_DATA_RATE = 0 (Cont)
-	uint8_t upper_reg1 = 0x03; 
-	uint8_t lower_reg1 = 0x80;	
+	//Register 1: TCMP = ON, BURST_SEL = 1110(ZYX-), BURST_DATA_RATE = 0 (Cont)
+	//
+	uint8_t upper_reg1 = 0x07;  
+	uint8_t lower_reg1 = 0x81;	
 	
 	//Register 2: OSR2=0, RES_XYZ=?, DIG_FILT = ?, OSR = ? 
 	uint8_t upper_reg2 = 0x00;
 	uint8_t lower_reg2 = 0x00;
+
+	//Define Measurement OFFSETs (used to account for static magnets
+	uint8_t OFFSET_XY_u = 0xFF; //upper register
+	uint8_t OFFSET_XY_l = 0xFF; //lower register
+	uint8_t OFFSET_Z_u = 0x80; //upper register Z
+	uint8_t OFFSET_Z_l = 0x00; //lower register Z
 	
 	//Add user values into registers
 	lower_reg0 = lower_reg0 | HALLCONF;
@@ -140,6 +147,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	lower_reg2 = lower_reg2 | (RES_XYZ << 5);
 	lower_reg2 = lower_reg2 | (DIG_FILT << 2);
 	lower_reg2 = lower_reg2 | (OSR);
+	
 	
 	// DEBUG INFO - print chip and 
 	Serial.print("\nConfig MLX:L");
@@ -221,6 +229,72 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 		
 		break;
 
+		/*****************************************
+	                                  Reg4: X offset
+		******************************************/	
+		Wire.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire.write(0x60); // Write register command
+		Wire.write(OFFSET_XY_u); // 
+		Wire.write(OFFSET_XY_l); // 
+		Wire.write(0x10); // Select address reg 4 (<<2) 
+		Wire.endTransmission();  // Stop I2C		
+
+		Wire.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire.read();
+			Serial.print(" R4_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg5: Y offset
+		******************************************/	
+		Wire.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire.write(0x60); // Write register command
+		Wire.write(OFFSET_XY_u); // 
+		Wire.write(OFFSET_XY_l); // 
+		Wire.write(0x14); // Select address reg 5 (<<2) 
+		Wire.endTransmission();  // Stop I2C		
+
+		Wire.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire.read();
+			Serial.print(" R5_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg6: Z offset
+		******************************************/	
+		Wire.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire.write(0x60); // Write register command
+		Wire.write(OFFSET_Z_u); // 
+		Wire.write(OFFSET_Z_l); // 
+		Wire.write(0x18); // Select address reg 6 (<<2) 
+		Wire.endTransmission();  // Stop I2C		
+
+		Wire.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire.read();
+			Serial.print(" R6_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+		
 	case 1:
 
 		/*****************************************
@@ -278,6 +352,72 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 		{
 			uint8_t ca = Wire1.read();
 			Serial.print(" R2_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+		
+				/*****************************************
+	                                  Reg4: X offset
+		******************************************/	
+		Wire1.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire1.write(0x60); // Write register command
+		Wire1.write(OFFSET_XY_u); // 
+		Wire1.write(OFFSET_XY_l); // 
+		Wire1.write(0x10); // Select address reg 4 (<<2) 
+		Wire1.endTransmission();  // Stop I2C		
+
+		Wire1.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire1.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire1.read();
+			Serial.print(" R4_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg5: Y offset
+		******************************************/	
+		Wire1.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire1.write(0x60); // Write register command
+		Wire1.write(OFFSET_XY_u); // 
+		Wire1.write(OFFSET_XY_l); // 
+		Wire1.write(0x14); // Select address reg 5 (<<2) 
+		Wire1.endTransmission();  // Stop I2C		
+
+		Wire1.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire1.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire1.read();
+			Serial.print(" R5_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg6: Z offset
+		******************************************/	
+		Wire1.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire1.write(0x60); // Write register command
+		Wire1.write(OFFSET_Z_u); // 
+		Wire1.write(OFFSET_Z_l); // 
+		Wire1.write(0x18); // Select address reg 6 (<<2) 
+		Wire1.endTransmission();  // Stop I2C		
+
+		Wire1.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire1.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire1.read();
+			Serial.print(" R6_status=0x");
 			Serial.print(ca, HEX);
 			receiveBuffer[0] = ca;
 		}
@@ -350,6 +490,72 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 		else _error = 0x2;
 		
 		break;
+		
+				/*****************************************
+	                                  Reg4: X offset
+		******************************************/	
+		Wire2.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire2.write(0x60); // Write register command
+		Wire2.write(OFFSET_XY_u); // 
+		Wire2.write(OFFSET_XY_l); // 
+		Wire2.write(0x10); // Select address reg 4 (<<2) 
+		Wire2.endTransmission();  // Stop I2C		
+
+		Wire2.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire2.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire2.read();
+			Serial.print(" R4_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg5: Y offset
+		******************************************/	
+		Wire2.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire2.write(0x60); // Write register command
+		Wire2.write(OFFSET_XY_u); // 
+		Wire2.write(OFFSET_XY_l); // 
+		Wire2.write(0x14); // Select address reg 5 (<<2) 
+		Wire2.endTransmission();  // Stop I2C		
+
+		Wire2.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire2.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire2.read();
+			Serial.print(" R5_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg6: Z offset
+		******************************************/	
+		Wire2.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire2.write(0x60); // Write register command
+		Wire2.write(OFFSET_Z_u); // 
+		Wire2.write(OFFSET_Z_l); // 
+		Wire2.write(0x18); // Select address reg 6 (<<2) 
+		Wire2.endTransmission();  // Stop I2C		
+
+		Wire2.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire2.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire2.read();
+			Serial.print(" R6_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
 
 	case 3:
 
@@ -409,6 +615,72 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 		{
 			uint8_t ca = Wire3.read();
 			Serial.print(" R2_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+		
+				/*****************************************
+	                                  Reg4: X offset
+		******************************************/	
+		Wire3.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire3.write(0x60); // Write register command
+		Wire3.write(OFFSET_XY_u); // 
+		Wire3.write(OFFSET_XY_l); // 
+		Wire3.write(0x10); // Select address reg 4 (<<2) 
+		Wire3.endTransmission();  // Stop I2C		
+
+		Wire3.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire3.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire3.read();
+			Serial.print(" R4_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg5: Y offset
+		******************************************/	
+		Wire3.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire3.write(0x60); // Write register command
+		Wire3.write(OFFSET_XY_u); // 
+		Wire3.write(OFFSET_XY_l); // 
+		Wire3.write(0x14); // Select address reg 5 (<<2) 
+		Wire3.endTransmission();  // Stop I2C		
+
+		Wire3.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire3.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire3.read();
+			Serial.print(" R5_status=0x");
+			Serial.print(ca, HEX);
+			receiveBuffer[0] = ca;
+		}
+		else _error = 0x2;
+		
+		break;
+
+		/*****************************************
+	                                  Reg6: Z offset
+		******************************************/	
+		Wire3.beginTransmission(_I2CAddress); // Start I2C Transmission
+		Wire3.write(0x60); // Write register command
+		Wire3.write(OFFSET_Z_u); // 
+		Wire3.write(OFFSET_Z_l); // 
+		Wire3.write(0x18); // Select address reg 6 (<<2) 
+		Wire3.endTransmission();  // Stop I2C		
+
+		Wire3.requestFrom(_I2CAddress, 1); // Request 1 byte of data
+		if (Wire3.available() == 1) // Read status byte
+		{
+			uint8_t ca = Wire3.read();
+			Serial.print(" R6_status=0x");
 			Serial.print(ca, HEX);
 			receiveBuffer[0] = ca;
 		}

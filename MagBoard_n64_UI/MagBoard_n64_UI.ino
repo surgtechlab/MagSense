@@ -16,7 +16,7 @@
 #include "FreeStack.h"
 
 //
-bool simulate_board = true;
+bool simulate_board = false;
 
 //Declare comms Functions - move to external library later
 void comms_SystemCheck();
@@ -36,9 +36,10 @@ char buffer[NODE_64];
 char stream_packet_header[5];
 int mux[2] = {10, 11};
 uint8_t Select_ZYX = 0xE;
-//CHIP SETTINGS
+
+//MLX CHIP SETTINGS
 uint8_t GAIN_SEL = 0x00;  // 
-uint8_t RES_XYZ = 0x00;  // 0x15=gain 1
+uint8_t RES_XYZ = 0x01;  // to match NN training 29/04/2019
 uint8_t DIG_FILT = 0x1;
 uint8_t OSR = 0x1;
 
