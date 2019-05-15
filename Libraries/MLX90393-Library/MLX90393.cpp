@@ -1104,7 +1104,7 @@ void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 	/*STAY CALM. It's not as bad as it looks.
 	Before, we looked at the i2cLine number and if it was 0, we did a bunch of commands for the wire 0 bus, if it was 1, we copy-pasted the same but for Wire1 etc etc.
 	
-	This made my fingers hurt. Instead, we have a new function, whichWire. This returns a POINTER to the correct Wire object. So in otherworse, if it's zero, it returns the address of Wire, for 1 it returns address of Wire1 etc... All the -> does it derefernce that pointer, aka go to that address and perform beginTransmsion on that object not the address.*/
+	This made my fingers hurt. Instead, we have a new function, whichWire. This returns a POINTER to the correct Wire object. So in other words, if it's zero, it returns the address of Wire, for 1 it returns address of Wire1 etc... All the -> does it derefernce that pointer, aka go to that address and perform beginTransmsion on that object not the address.*/
 	
 	WhichWire(i2cLine)->beginTransmission(_I2CAddress);	// Start I2C Transmission
 	WhichWire(i2cLine)->write(select);						// Read measurement command (ZXYT = 1111)

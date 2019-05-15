@@ -89,6 +89,8 @@ public:
 		@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
 	*/
 	void read64Nodes(char *buffer, char zyxt);
+	
+	void read16NodeLine(char *buffer, char zyxt);
 
 /* ********** GLOBAL FUNCTIONS ********** */
 

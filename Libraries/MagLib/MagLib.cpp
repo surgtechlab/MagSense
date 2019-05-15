@@ -91,7 +91,6 @@ void MagLib::init16Nodes(uint32_t addressPackage, char *buffer, char zyxt, int *
 	// Initialise all individual devices
 	setMux(LOW, LOW);
 	Serial.print("\n*****MUX(0,0)\n");
-
 	initFourNode(addressPackage, receiveBuffer, zyxt, i2cLine,GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 
 	// Change mux lines and repeat
@@ -188,6 +187,52 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 				packetOffset = packetOffset + 2 + (muxIdx*24) +((devAddrIdx-1)*6);
 				for (int i = 2; i < RCVBUFSZ-1; i++) buffer[packetOffset+i] = receiveBuffer[i + 1];
 			}
+		}
+	
+	} //End for
+	
+	//delay(50);
+	
+}
+
+
+void MagLib::read16NodeLine(char *buffer, char zyxt)
+{
+	//Pack the current time into the buffer
+	unsigned long time = millis();
+	
+	buffer[0] = time & 255;
+	buffer[1] = (time>>8) & 255;
+	buffer[2] = (time>>16) & 255;
+	buffer[3] = (time>>24) & 255;
+	
+	int packet_offset = 0;
+	
+	//Loop around the muxId instead, so that we can do async calls to each i2c bus
+	for(uint8_t muxIdx =0; muxIdx < NMUX; muxIdx++)
+	{
+		//Set the mux...
+		setMux(muxIdx);
+		
+		//For each device
+		for(uint8_t devAddrIdx=1; devAddrIdx <= NADDR; devAddrIdx++)
+		{
+				nodeAddrObj[devAddrIdx-1].RequestMeasurement(receiveBuffer, zyxt, 0);
+			
+				nodeAddrObj[devAddrIdx-1].AsyncRxFill(receiveBuffer, zyxt, 0);
+			
+				unsigned long startT = micros();
+				while(!nodeAddrObj[devAddrIdx-1].measureReady(0));
+				unsigned long stopT = micros();
+				//Okay this node address is ready, so go ahead and read into receive buf
+				
+				nodeAddrObj[devAddrIdx-1].takeMeasure(receiveBuffer,0);
+
+				//Work out the address 
+				uint16_t packetOffset = 0 * NODE_PER_MUX*NODE_N_BYTE;
+				//Based on the address of the mux too
+				packetOffset = packetOffset + 2 + (muxIdx*24) +((devAddrIdx-1)*6);
+				for (int i = 2; i < RCVBUFSZ-1; i++) buffer[packetOffset+i] = receiveBuffer[i + 1];
 		}
 	
 	} //End for
