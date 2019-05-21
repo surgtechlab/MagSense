@@ -85,9 +85,15 @@ void loop() {
         stream_packet_header[0] = 0x0A;
         stream_packet_header[1] = 0x0B;
         stream_packet_header[2] = 0x0C;
-		Serial.write(stream_packet_header,3);
-		Serial.write(buffer,NODE_64);
-    Serial.print("\n\n");
+		//Serial.write(stream_packet_header,3);
+		//Serial.write(buffer,NODE_64);
+
+    for(int i = 0; i < NODE_64; i++)
+    {
+      Serial.print(buffer[i],HEX);
+      Serial.print(" ");
+    }
+    Serial.print("\n");
 		delay(1000);
 }
 //END LOOP *****************************************************************

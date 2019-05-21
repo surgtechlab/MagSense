@@ -40,6 +40,8 @@
 // Variables
 //int mux[2] = {10, 11};
 
+uint8_t all = 0;
+
 // -------------------------------------------------------------------------------------------
 // Function prototypes
 void scan_bus(i2c_t3& Wire, uint8_t all);
@@ -98,11 +100,34 @@ void setup()
 // -------------------------------------------------------------------------------------------
 void loop()
 {
+       
     // Scan I2C addresses
     //
     if(digitalRead(12) == LOW || digitalRead(24) == LOW)
     {
-        uint8_t all = (digitalRead(24) == LOW);
+        
+        
+        uint8_t i_reset = (digitalRead(24) == LOW);
+
+        if(i_reset)
+        {
+              Serial.print("Bus Reset\n");
+              Wire.begin(I2C_MASTER, 0x00, WIRE_PINS, I2C_PULLUP_EXT, 400000);
+              Wire.setDefaultTimeout(10000); // 10ms
+              #if I2C_BUS_NUM >= 2
+              Wire1.begin(I2C_MASTER, 0x00, WIRE1_PINS, I2C_PULLUP_EXT, 400000);
+              Wire1.setDefaultTimeout(10000); // 10ms
+              #endif
+              #if I2C_BUS_NUM >= 3
+              Wire2.begin(I2C_MASTER, 0x00, WIRE2_PINS, I2C_PULLUP_EXT, 400000);
+              Wire2.setDefaultTimeout(10000); // 10ms
+              #endif
+              #if I2C_BUS_NUM >= 4
+              Wire3.begin(I2C_MASTER, 0x00, WIRE3_PINS, I2C_PULLUP_EXT, 400000);
+              Wire3.setDefaultTimeout(10000); // 10ms
+              #endif
+        }
+        
 
         Serial.print("---------------------------------------------------\n");
         Serial.print("Bus Status Summary\n");

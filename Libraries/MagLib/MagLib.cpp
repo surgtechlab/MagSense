@@ -55,6 +55,23 @@ void MagLib::initCommunication(int baudRate, int i2cLine)
 	}
 }
 
+void MagLib::initComms(int baudRate, int i2cLine)
+{
+	//use which wire function to condense the function above
+}
+
+
+void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zyxt, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
+{
+	//take array of uint addresses
+	
+	//LOOP I2C
+		//LOOP MUX - init16 node
+			//LOOP ADDRESSES - initfour node
+	
+	
+}
+
 void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zyxt, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
 {	
 	_address1 = addressPackage & 0xFF;
