@@ -61,13 +61,33 @@ void MagLib::initComms(int baudRate, int i2cLine)
 }
 
 
-void MagLib::initFourNode(uint32_t addressPackage, char *_receiveBuffer, char zyxt, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
+void MagLib::initSensingNodes(uint8_t *NodeAddresses, char *_receiveBuffer, uint8_t nMUX, uint8_t nI2C, uint8_t nAddress, char zyxt, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR)
 {
-	//take array of uint addresses
 	
-	//LOOP I2C
-		//LOOP MUX - init16 node
-			//LOOP ADDRESSES - initfour node
+	//NodeAddresses - array of node addresses 
+	
+	//LOOP through the MUX states
+	for(uint8_t muxId =0; muxId < (nMUX-1); muxId++)
+	{
+		//Set the mux...
+		setMux(muxId);
+		
+		//LOOP through each I2C line
+		for(uint8_t i2cID = 0; i2cID < (nI2C-1); i2cID++)
+		{
+		
+			//LOOP through each address
+			for(uint8_t nodeId=0; nodeId < (nAddress-1); nodeId++)
+			{	
+				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID);
+				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
+				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
+				
+			} //end address loop
+			
+		}//end i2c loop
+		
+	}//end MUX loop
 	
 	
 }
@@ -209,6 +229,62 @@ void MagLib::read64Nodes(char *buffer, char zyxt)
 	} //End for
 	
 	//delay(50);
+	
+}
+
+void MagLib::readSensingNodes(char *buffer, char zyxt, uint8_t nMUX, uint8_t nI2C, uint8_t nAddress)
+{
+	//Pack the current time into the buffer
+	unsigned long time = millis();
+	buffer[0] = time & 255;
+	buffer[1] = (time>>8) & 255;
+	buffer[2] = (time>>16) & 255;
+	buffer[3] = (time>>24) & 255;
+	
+	int packet_offset = 0;
+	
+	//Loop around the muxId instead, so that we can do async calls to each i2c bus
+	for(uint8_t muxId =0; muxId < (nMUX-1); muxId++)
+	{
+		//Set the mux...
+		setMux(muxId);
+		
+		//LOOP through addresses 
+		for(uint8_t nodeId=0; nodeId < (nAddress-1); nodeId++)
+		{
+		
+			//REQUEST LOOP - I2C Lines
+			for(uint8_t i2cID = 0; i2cID < (nI2C-1); i2cID++) //loop through the i2C buses
+			{
+				//Now request for each sweep on that device
+				nodeAddrObj[nodeId].RequestMeasurement(receiveBuffer, zyxt, i2cID);
+			}
+			//WAIT LOOP - IS DATA READY
+			for(uint8_t i2cID = 0; i2cID < (nI2C-1); i2cID++) //loop through the i2C buses
+			{
+				nodeAddrObj[nodeId].AsyncRxFill(receiveBuffer, zyxt, i2cSweep);
+			}
+				
+			
+			//READ LOOP
+			for(uint8_t i2cID = 0; i2cID < (nI2C-1); i2cID++) //loop through the i2C buses
+			{
+
+				//While there's no bytes available to read, do nothing...
+				while(!nodeAddrObj[nodeId].measureReady(i2cID));
+				
+				//Data ready - so read
+				nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
+
+				//Work out the address 
+				uint16_t packetOffset = i2cID * nAddress*NODE_N_BYTE;
+				//Based on the address of the mux too
+				packetOffset = packetOffset + 2 + (i2cID*24) +((nodeId)*6);
+				for (int i = 2; i < RCVBUFSZ-1; i++) buffer[packetOffset+i] = receiveBuffer[i + 1];
+			}
+		}
+	
+	} //End for
 	
 }
 
