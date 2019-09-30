@@ -61,17 +61,24 @@ public:
 	*/
 	~MagLib();
 
+	/**	Initalise system to use with client application.
+	 *	@param DEVICE device to interface with
+	 *	@param buffer array of chars to return data from sensors
+	 */
 	void setupForClient(unsigned DEVICE, int ledPin, int baud);
 
+	/** Initiase a specific I2C communication channel
+	 *  @param i2cLine I2C Channel to be initialised
+	 */
 	void initI2C(int i2cLine);
 
-	/*	Initalise sensing nodes for specific device
+	/**	Initalise sensing nodes for specific device
 	 *	@param DEVICE Device containing
 	 *	@param buffer Array to return data received by MLXs
 	 */
 	void initSensingNodesFor(unsigned DEVICE, int BAUD, char *buffer);
 
-	/*	Initalise sensor nodes before taking measurements
+	/**	Initalise sensor nodes before taking measurements
 	 *	@param NodeAddress array of 8-bit addresses for MLX90393 devices (ranging from 0x0C to 0x0F)
 	 *	@param receiveBuffer array to return data received by MLX's
 	 *	@param nMUX	number of multiplexers used in sensor arrays
@@ -91,14 +98,14 @@ public:
 							uint8_t DIG_FILT,
 							uint8_t OSR);
 
-	/*	Prepare to read a desired number of sensors
+	/**	Prepare to read a desired number of sensors
 	 *	@param DEVICE constant defining the desired device.
 	 *	Set	address, mux and i2c lines accordingly.
 	 *	@param buffer array of chars to return data bytes from sensors
 	 */
 	void readSensingNodesFor(unsigned DEVICE, char *buffer);
 
-	/*	Read a number of sensors on specified mux and I2C lines
+	/**	Read a number of sensors on specified mux and I2C lines
 	 *	@param buffer array to return data received by MLX's
 	 *	@param zyxt select desired axes/temperature values to read
 	 *	@param nMUX	number of multiplexers used in sensor arrays
@@ -111,7 +118,7 @@ public:
 							uint8_t nI2C,
 							uint8_t nAddress);
 
-	/*	Test a specific node on any sensor or array
+	/**	Test a specific node on any sensor or array
 	 *	@param buffer array of chars to return data from sensors
 	 *	@param zyxt selected desired axes/temperature values to read
 	 *	@param address address of specific node to test
@@ -120,22 +127,13 @@ public:
 	 */
 	void testNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
 
-/* ********** LabVIEW CLINENT FUNCTIONS ********** */
+/* ********** Client FUNCTIONS ********** */
 
+	/**	Main interface for client applications
+	 *	@param DEVICE device to interface with
+	 *	@param buffer array of chars to return data from sensors
+	 */
 	void comms_MainMenu(unsigned DEVICE, char *buffer);
-	void comms_EstablishContact();
-	void System_Initialise(unsigned DEVICE, char *buffer);
-	void comms_SystemCheck();
-	void System_Stream(unsigned DEVICE, char *buffer);
-
-	bool test_SD_datalog();
-
-	void comms_SD_Status();
-
-	void SD_datalog();
-
-	void SD_upload();
-
 
 /* ********** GLOBAL FUNCTIONS ********** */
 
@@ -172,10 +170,49 @@ public:
 	*/
 	void TimeMeasurement(float TimeTaken);
 
-	//Error function
+	// Print an error to the serial port function
 	void MagError(char *err);
 
 private:
+
+ 	/** Establis a connection with the client application.
+	 */
+	void comms_EstablishContact();
+
+	/** Initiase the system for a specific number of sensor nodes.
+	 *	@param DEVICE device to interface with.
+	 *	@param buffer array of chars to return data from sensors.
+	 */
+	void System_Initialise(unsigned DEVICE, char *buffer);
+
+	/**	Perform a check on the communication systems.
+	 *	@details Calls the test_SD_datalog() and comms_SD_Status() functions.
+	 */
+	void comms_SystemCheck();
+
+	/** Wireless stream data to the client application.
+	 *	@param DEVICE device to interface with.
+	 *	@param buffer array of chars to return data from sensors.
+	 */
+	void System_Stream(unsigned DEVICE, char *buffer);
+
+	/** Test the SD logging feature
+	 *  @details Perform a finite number of sensor readings and write to file.
+	 *	@details Test the speed and number of writes performed.
+	 */
+	bool test_SD_datalog();
+
+	/**	Print the size, type and space of the SD card.
+	 */
+	void comms_SD_Status();
+
+	/** Read the sensors and write to SD.
+	 */
+	void SD_datalog();
+
+ 	/**	Upload a specific file to the client application from the SD card.
+	 */
+	void SD_upload();
 
 	/*  can be overloaded to use in loops and
 	* be used with a flexible number of muxes */
@@ -184,7 +221,6 @@ private:
 	// Taken from Arduino.com
 	int getFiles(File dir, int numTabs);
 
-
 	char mag_buffer[];
 
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
@@ -192,14 +228,19 @@ private:
 
 	//An array of objects that contain the correct addressing for each node
 	MLX90393 nodeAddrObj[NADDR];
-	//[0] is I2C Line ? Address 1
-	//[1] is I2C Line ? Address 2 ...
 
-	int _mux[2] = {10, 11};		/** Pins specifying single multiplexerbus [S1 S0] */
+	// Pins specifying single multiplexerbus [S1 S0]
+	int _mux[2] = {10, 11};
 
 	bool status_led = false;
 
-	i2c_pins I2C_PINS[4] = {I2C_PINS_18_19, I2C_PINS_37_38, I2C_PINS_3_4, I2C_PINS_56_57};
+	// Pins on Teensy board to be used for I2C communication.
+	i2c_pins I2C_PINS[4] = {
+		I2C_PINS_18_19,
+		I2C_PINS_37_38,
+		I2C_PINS_3_4,
+		I2C_PINS_56_57
+	};
 
 	//Be able to index wire buses to make it easier
 	i2c_t3* WhichWire(uint8_t wireNo);
