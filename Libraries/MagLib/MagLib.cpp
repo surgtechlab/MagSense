@@ -338,8 +338,7 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 			case 'I':
 				ble.print("i");
 				Serial.println("Initialise System");
-				Serial.printf("receiveBuffer size: %d\n", sizeof(buffer));
-				System_Initialise(DEVICE, receiveBuffer);
+				System_Initialise(DEVICE, buffer);
 				ble.print("I");	// End of text stream
 				break;
 			case 'F':
@@ -403,7 +402,6 @@ void MagLib::System_Stream(unsigned DEVICE, char *buffer)
 	char counter = 0;
 
 	do {
-		//Serial.println("Reading device...");
 		//TAKE READING FROM MAGBOARD
 		readSensingNodesFor(DEVICE, buffer);
 
