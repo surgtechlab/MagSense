@@ -306,10 +306,10 @@ void MagLib::readSensingNodes(	char *buffer,
 		}
 	} //End for
 
-	buffer[4] = (time) & 255;
-	buffer[3] = ((time)>>8) & 255;
-	buffer[2] = ((time)>>16) & 255;
-	buffer[1] = ((time)>>24) & 255;
+	buffer[3] = (time) & 255;
+	buffer[2] = ((time)>>8) & 255;
+	buffer[1] = ((time)>>16) & 255;
+	buffer[0] = ((time)>>24) & 255;
 
 	t_old = time;
 }
@@ -408,27 +408,25 @@ void MagLib::System_Stream(unsigned DEVICE, char *buffer)
 		stream_packet_header[0] = 0x0A;
 		stream_packet_header[1] = 0x0B;
 		stream_packet_header[2] = 0x0C;
-		stream_packet_header[3] = counter;
 		// stream_packet_header[3] = packet_size & 0xFF;
 		// stream_packet_header[4] = (packet_size>>8) & 0xFF;
 
-		ble.write(stream_packet_header, 4);
-		counter++;
+		ble.write(stream_packet_header, 3);
 
 		// Max buffer size = 20.
 		// Write two nodes at a time (buffer of 12).
-		for (int i = 0; i < DEVICE-4; i+= 12) {
-			// Fill write buffer with 12 chars
-			for (int j = 0; j<12; j++) {
-				writeBuffer[j] = buffer[4+i+j];
-			}
+		// for (int i = 0; i < DEVICE; i+= 12) {
+		// 	// Fill write buffer with 12 chars
+		// 	for (int j = 0; j<12; j++) {
+		// 		writeBuffer[j] = buffer[i+j];
+		// 	}
+		//
+		// 	ble.write(writeBuffer, 12);
+		// }
 
-			ble.write(writeBuffer, 12);
-		}
+		ble.write(buffer, DEVICE);
 
-		//ble.write(, _DEVICE);
-		ble.print("s");
-
+		// Wait for packet acknowledgement
 		while (ble.available() < 1) { }
 
 		commsByte = ble.read();
