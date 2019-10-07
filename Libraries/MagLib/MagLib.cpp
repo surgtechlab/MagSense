@@ -400,31 +400,15 @@ void MagLib::System_Stream(unsigned DEVICE, char *buffer)
 	char stream_packet_header[5];
 	char writeBuffer[12];
 	char counter = 0;
+	int size;
+
+	ble.flush();
 
 	do {
 		//TAKE READING FROM MAGBOARD
 		readSensingNodesFor(DEVICE, buffer);
 
-		stream_packet_header[0] = 0x0A;
-		stream_packet_header[1] = 0x0B;
-		stream_packet_header[2] = 0x0C;
-		// stream_packet_header[3] = packet_size & 0xFF;
-		// stream_packet_header[4] = (packet_size>>8) & 0xFF;
-
-		ble.write(stream_packet_header, 3);
-
-		// Max buffer size = 20.
-		// Write two nodes at a time (buffer of 12).
-		// for (int i = 0; i < DEVICE; i+= 12) {
-		// 	// Fill write buffer with 12 chars
-		// 	for (int j = 0; j<12; j++) {
-		// 		writeBuffer[j] = buffer[i+j];
-		// 	}
-		//
-		// 	ble.write(writeBuffer, 12);
-		// }
-
-		ble.write(buffer, DEVICE);
+		size = ble.write(buffer, DEVICE);
 
 		// Wait for packet acknowledgement
 		while (ble.available() < 1) { }
