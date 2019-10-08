@@ -31,10 +31,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAGONE			10  // 3axes * 2bytes per axis + 4 time bytes
 #define HAILO     		28	// 6bytes * 4nodes + 4 time bytes
 #define MAGTRIX       	100	// 6bytes * 16nodes + 4 time bytes
+#define BRACE			100 // 6bytes * 16nodes + 4 time bytes
 #define MAGBOARD       	388	// 6bytes * 64nodes + 4 time bytes
 
 #define NADDR			4
 
+#define LED_GREEN		27
+#define LED_RED			28
+#define LED_BLUE		29
 
 // *********** SD Card Config ************* //
 // Size of read/write buffer
@@ -60,8 +64,6 @@ public:
 	/**	Default deconstructor
 	*/
 	~MagLib();
-
-	void setupForClient(unsigned DEVICE, int ledPin, int baud);
 
 	void initI2C(int i2cLine);
 
@@ -110,6 +112,12 @@ public:
 							uint8_t nMUX,
 							uint8_t nI2C,
 							uint8_t nAddress);
+
+	void setupForClient(unsigned DEVICE, int ledPin, int baud);
+
+	void initBrace(char *buffer);
+
+	void readBrace(char *buffer);
 
 	/*	Test a specific node on any sensor or array
 	 *	@param buffer array of chars to return data from sensors

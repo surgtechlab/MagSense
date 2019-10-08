@@ -230,7 +230,7 @@ void MagLib::readSensingNodesFor(unsigned DEVICE, char *receiveBuffer)
 			break;
 		case NODE_16:
 			nMUX = 1;
-			nI2C = 4;
+			nI2C = 4;		// Change to 3 for Brace (issue with i2c line 4)
 			nAddress = 4;
 			break;
 		case NODE_32:
@@ -284,10 +284,8 @@ void MagLib::readSensingNodes(	char *buffer,
 			}
 			//WAIT LOOP - IS DATA READY
 			for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
-
 				nodeAddrObj[nodeId].AsyncRxFill(receiveBuffer, zyxt, i2cID);
 			}
-
 			//READ LOOP
 			for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
 				//While there's no bytes available to read, do nothing...
@@ -312,6 +310,89 @@ void MagLib::readSensingNodes(	char *buffer,
 	buffer[0] = ((time)>>24) & 255;
 
 	t_old = time;
+}
+
+void MagLib::initBrace(char *buffer)
+{
+	// Set pins
+	pinMode(7, OUTPUT);		// Battery status pin
+	pinMode(10, OUTPUT);	// Vibration motor
+
+	pinMode(27, OUTPUT);	// Green LED
+	pinMode(28, OUTPUT);	// Red LED
+	pinMode(29, OUTPUT);	// Blue LED
+
+	// Turn red LED on
+	digitalWrite(27, LOW);
+	digitalWrite(28, HIGH);
+	digitalWrite(29, LOW);
+
+	// Initialise mux Pins
+	pinMode(_mux[0], OUTPUT);
+	pinMode(_mux[1], OUTPUT);
+
+	//Configure MUX enable pins (Enable is Low)
+	pinMode(5,OUTPUT);
+	pinMode(6,OUTPUT);
+	pinMode(7,OUTPUT);
+	pinMode(8,OUTPUT);
+
+	//Enable All MUX Chips
+	digitalWrite(5,LOW);
+	digitalWrite(6,LOW);
+	digitalWrite(7,LOW);
+	digitalWrite(8,LOW);
+
+	Serial.printf("Init i2c: 1\n");
+	// init i2c comms
+	Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
+	Wire.setDefaultTimeout(200000);
+	Wire.setOpMode(I2C_OP_MODE_ISR);
+	Wire.setRate(I2C_RATE_400);
+
+	Serial.printf("Init i2c: 2\n");
+	// init i2c comms
+	Wire1.begin(I2C_MASTER, 0x00, I2C_PINS_37_38, I2C_PULLUP_EXT, 400000);
+	Wire1.setDefaultTimeout(200000);
+	Wire1.setOpMode(I2C_OP_MODE_ISR);
+	Wire1.setRate(I2C_RATE_400);
+
+	Serial.printf("Init i2c: 3\n");
+	// init i2c comms
+	Wire2.begin(I2C_MASTER, 0x00, I2C_PINS_3_4, I2C_PULLUP_EXT, 400000);
+	Wire2.setDefaultTimeout(200000);
+	Wire2.setOpMode(I2C_OP_MODE_ISR);
+	Wire2.setRate(I2C_RATE_400);
+
+	Serial.printf("Init i2c: 4\n");
+	// init i2c comms
+	Wire3.begin(I2C_MASTER, 0x00, I2C_PINS_16_17, I2C_PULLUP_EXT, 400000);
+	Wire3.setDefaultTimeout(200000);
+	Wire3.setOpMode(I2C_OP_MODE_ISR);
+	Wire3.setRate(I2C_RATE_400);
+
+	uint8_t NodeAddresses[4] = {0x0C, 0x0D, 0x0E, 0x0F};
+	uint8_t nAddress = 4;
+	uint8_t nI2C = 4;
+	uint8_t nMUX = 1;
+	char zyxt = 0xE;
+	uint8_t GAIN_SEL = 0x00;  //
+	uint8_t RES_XYZ = 0x01;  //
+	uint8_t DIG_FILT = 0x1;
+	uint8_t OSR = 0x1;
+
+	// FIGURE OUT MUX PIN OVERLAP WITH VIBRATION MOTOR (PIN 10)
+	initSensingNodes(NodeAddresses, buffer, nMUX, nI2C, nAddress, zyxt,
+		GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
+
+	// Turn green LED on.
+	digitalWrite(27, HIGH);
+	digitalWrite(28, LOW);
+	digitalWrite(29, LOW);
+}
+
+void MagLib::readBrace(char *buffer)
+{
 }
 
 void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
@@ -739,7 +820,7 @@ void MagLib::SD_upload()
     int hour = ble.read();		// HOUR
     int minute = ble.read();	// MINUTE
 
-	char receiveBuffer[64];
+	char buffer[64];
 	char *mon_fmt, *day_fmt, *hr_fmt, *min_fmt;
 
 	if (minute < 10) min_fmt = "0%d";
@@ -753,13 +834,13 @@ void MagLib::SD_upload()
 
 	// Format to resemble "HourMinuteDayMonth.dat".
 	// Copy hour format to receiveBuffer first then add the rest behind it
-	strncpy(receiveBuffer, hr_fmt, sizeof(receiveBuffer));
-	strncat(receiveBuffer, min_fmt, sizeof(receiveBuffer));
-	strncat(receiveBuffer, day_fmt, sizeof(receiveBuffer));
-	strncat(receiveBuffer, mon_fmt, sizeof(receiveBuffer));
-	strncat(receiveBuffer, ".dat", sizeof(receiveBuffer));
+	strncpy(buffer, mon_fmt, sizeof(buffer));
+	strncat(buffer, day_fmt, sizeof(buffer));
+	strncat(buffer, hr_fmt, sizeof(buffer));
+	strncat(buffer, min_fmt, sizeof(buffer));
+	strncat(buffer, ".dat", sizeof(buffer));
 
-	sprintf(filename, receiveBuffer, hour, minute, day, month);
+	sprintf(filename, buffer, month, day, hour, minute);
 
 	Serial.print("Upload. Filename=");
 	Serial.println(filename);
