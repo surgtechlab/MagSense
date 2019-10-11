@@ -10,16 +10,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #ifndef MAGLIB_H
 #define MAGLIB_H
 
-//#include <SD.h>
 #include <SPI.h>
 #include <Time.h>
 #include <SoftwareSerial.h>
+#include "RN487x_BLE.h"
 #include "MLX90393.h"
 #include "SdFat.h"
 #include "sdios.h"
 #include "FreeStack.h"
 
-
+// ****** Sensor System Size Definitions ****** //
 #define NODE_SINGLE   	10	// 3axes * 2bytes per axis + 4 time bytes
 #define NODE_FOUR		28	// 6bytes * 4nodes + 4 time bytes
 #define NODE_8			52	// 6bytes * 8nodes + 4 time bytes
@@ -36,6 +36,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define NADDR			4
 
+// ****** BLE Definitions ****** //
+#define SOFTWARE_SERIAL 1
+#define HARDWARE_SERIAL 2
+
+#define ble 			Serial1
+
+// Maximuim number of milliseconds to wait for USB serial to get ready on boot
+#define SERIAL_TIMEOUT_MS 5000
+
+
+// ****** Brace+ Definitions ****** //
 #define LED_GREEN		27
 #define LED_RED			28
 #define LED_BLUE		29
@@ -48,21 +59,22 @@ const uint32_t FILE_SIZE_MB = 5;
 // File size in bytes.
 const uint32_t FILE_SIZE = 1000000UL*FILE_SIZE_MB; //unsigned long constant
 
+
 /**	@file MagLib.h
-	@brief Class for integration with arrays of MagOne sensors on the Arduino platform.
+	@brief Class for integration with arrays of MLX90393 sensors on the Arduino platform.
 	@author Max Houghton, Pete Culmer
 	@data 10/07/2018
-*/
+ */
 class MagLib
 {
 public:
 
 	/**	Default constructor. Instanciates MagLib object.
-	*/
+	 */
 	MagLib();
 
 	/**	Default deconstructor
-	*/
+	 */
 	~MagLib();
 
 	/*	Initialise I2C communication channels
@@ -117,11 +129,17 @@ public:
 							uint8_t nAddress);
 
 	/*	Setup device for use with client application.
+	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
+	 *	or SoftwareSerial, i.e. HM10)
 	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
 	 *	@param ledPin Teensy onboard LED pin.
 	 *	@param baud Baud rate for serial communication.
 	 */
-	void setupForClient(unsigned DEVICE, int ledPin, int baud);
+	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud);
+
+	/**	Initalise Bluetooth Low Energy device
+	 */
+	void initBLE();
 
 	/*	Initialise Brace+ system for use.
 	 *	@param buffer Array of bytes containing sensor init information.
@@ -237,6 +255,12 @@ private:
 	 */
 	int getFiles(File dir, int numTabs);
 
+	// Custom GATT Profile for BLE Data Streaming
+	const char* sensorServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
+	const char* sensorCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom characteristic GATT
+	const uint8_t sensorCharacteristicLen = MAGBOARD;    // Data length (bytes)
+	const uint8_t sensorHandle = 0x75;
+	char sensorPayload[sensorCharacteristicLen*2 + 1];
 
 	char mag_buffer[];
 
@@ -259,6 +283,8 @@ private:
 
 	int NMUX;
 
+	int PLATFORM;
+
 	unsigned _DEVICE = 0;
 	int serial_baud;
 
@@ -278,7 +304,7 @@ private:
 	SdFile file;
 
 	// Bluetooth device
-	SoftwareSerial ble;
+	SoftwareSerial ble_ss;
 };
 
 #endif /* MAGLIB_H */

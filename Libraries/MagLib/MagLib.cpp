@@ -21,10 +21,9 @@ SOFTWARE.*/
 #include "MagLib.h"
 
 MagLib::MagLib()
-	: ble(SoftwareSerial(0,1))
+	: ble_ss(SoftwareSerial(0,1))
 {
-	// BLE fixed BAUD rate at 9600 (can maybe change? look into)
-	ble.begin(9600);
+
 }
 
 MagLib::~MagLib()
@@ -32,8 +31,9 @@ MagLib::~MagLib()
 
 }
 
-void MagLib::setupForClient(unsigned DEVICE, int ledPin, int baud)
+void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud)
 {
+	PLATFORM = platform;
 	_DEVICE = DEVICE;
 	_ledPin = ledPin;
 	serial_baud = baud;
@@ -41,7 +41,7 @@ void MagLib::setupForClient(unsigned DEVICE, int ledPin, int baud)
 	pinMode(_ledPin, OUTPUT);
     digitalWrite(_ledPin, LOW);
 
-	//Initiate USB Serial + BT comms
+	//Initiate USB Serial
 	Serial.begin(serial_baud);
 
 	//while (!Serial) { SysCall::yield(); }
@@ -54,8 +54,28 @@ void MagLib::setupForClient(unsigned DEVICE, int ledPin, int baud)
 	  sd.initErrorHalt();
 	  Serial.println("ERROR: SD Card Initialisation");
 	}
-	else{
-	  Serial.println("SD Card Initialised\n");
+	else {
+	  Serial.println("SD Card Initialised");
+	}
+
+	// Initialise bluetooth according to specified platform.
+	switch (PLATFORM) {
+		case SOFTWARE_SERIAL:
+			// BLE fixed BAUD rate at 9600 (can maybe change? look into)
+			ble_ss.begin(9600);
+			break;
+		case HARDWARE_SERIAL:
+			if (initBLE()) {
+				Serial.println("BLE Initialised");
+			}
+			else {
+				Serial.println("ERROR: BLE Initialisation failed.");
+			}
+			break;
+		default:
+			Serail.println("Unknown BLE Platform specified.");
+			while(1);
+			break;
 	}
 }
 
@@ -73,12 +93,69 @@ void MagLib::initI2C(int i2cID)
 	thisWire->setRate(I2C_RATE_400);
 }
 
+bool MagLib::initBLE()
+{
+	// Set the optional debug stream
+  	rn487xBle.setDiag(Serial);
+  	// Initialize the BLE hardware with our sleep and wakeup pins
+  	rn487xBle.hwInit(-1, -1);
+	// Open communication pipe with the BLE module
+	ble.begin(rn487xBle.getDefaultBaudRate());
+	// Assign the BLE serial port to the BLE library
+  	rn487xBle.initBleStream(&ble);
+
+	if (rn487xBle.swInit()) {
+		Serial.println("Init. procedure done!");
+	}
+	else {
+		Serial.println("Init. procedure failed!");
+		return false;
+	}
+
+	// Fist, enter into command mode
+	rn487xBle.enterCommandMode();
+	// Stop advertising before starting the demo
+	rn487xBle.stopAdvertising();
+	rn487xBle.clearPermanentAdvertising();
+	rn487xBle.clearPermanentBeacon();
+	rn487xBle.clearImmediateAdvertising();
+	rn487xBle.clearImmediateBeacon();
+	rn487xBle.clearAllServices();
+
+	// Set the serialized device name
+	rn487xBle.setSerializedName("MagBoard");
+	rn487xBle.setSupportedFeatures(0x4000); // Set to no prompt (no "CMD>")
+	rn487xBle.setDefaultServices(DEVICE_INFO_SERVICE);
+
+	// Set the advertising output power (range: min = 5, max = 0)
+	rn487xBle.setAdvPower(0);
+	rn487xBle.reboot();
+
+	rn487xBle.enterCommandMode();
+	rn487xBle.clearAllServices();
+	// Set a private service
+	rn487xBle.setServiceUUID(sensorServiceUUID);
+	// Private service contains the sensors characteristic
+	rn487xBle.setCharactUUID(sensorCharacteristicUUID, WRITE_PROPERTY | NOTIFY_PROPERTY, sensorCharacteristicLen);
+
+	rn487xBle.startPermanentAdvertising(AD_TYPE_FLAGS, "06");
+	rn487xBle.startPermanentAdvertising(AD_TYPE_MANUFACTURE_SPECIFIC_DATA, "CD00FE14AD11CF40063F11E5BE3E0002A5D5C51B");
+
+	// take into account the settings by issuing a reboot
+	rn487xBle.reboot();
+	rn487xBle.enterCommandMode();
+
+	rn487xBle.startCustomAdvertising(100);
+
+	return true;
+}
+
 void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 {
 	if (!Serial) Serial.begin(BAUD);
 
 	Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
-	while (!Serial) { SysCall::yield(); }
+	//while (!Serial) { SysCall::yield(); }
 
 	Serial.println("\nInitialising Mux...");
 
@@ -397,73 +474,179 @@ void MagLib::readBrace(char *buffer)
 
 void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 {
-	if (ble.available() > 0)
-	{
-		int commsByte = ble.read();
-		Serial.print("\nCommand Recieved: ");
-		Serial.print(commsByte);
-		Serial.print("\n");
 
-		int files = 0;
-		bool sd_card = false;
+	switch (PLATFORM) {
+		case SOFTWARE_SERIAL:
+			// If connected to central device:
+			if (rn487xBle.getConnectionStatus())
+			{
+				digitalWrite(LED_GREEN, HIGH);
+				digitalWrite(LED_RED, LOW);
 
-		switch (commsByte) {
-			case '^':
-				ble.print("RDY");
-				Serial.println("Received ready command");
-				break;
-			case 'X':
-				comms_EstablishContact();
-				ble.print("X");
-				break;
-			case 'I':
-				ble.print("i");
-				Serial.println("Initialise System");
-				System_Initialise(DEVICE, buffer);
-				ble.print("I");	// End of text stream
-				break;
-			case 'F':
-				files = getFiles(sd.open("/"), 0);
-				Serial.printf("Discovered %d files\n", files);
-				ble.print("F");
-				break;
-			case 'T':
-				ble.print("t");
-				sd_card = test_SD_datalog();
-				if (sd_card) {
-					ble.print("T");
-					Serial.println("Tests successful.");
-				} else ble.print("e");
-				break;
-			case 'C':
-				Serial.println("check sd status");
-				comms_SD_Status();
-				ble.print("C");
-				break;
-			case 'S':
-				//ble.print("s");
-				System_Stream(DEVICE, buffer);
-				ble.print("S");
-				break;
-			case 'L':
-				ble.print("l");
-				SD_datalog();
-				ble.print("L");
-				break;
-			case 'G':	// get datafile
-				ble.print("g");
-	            SD_upload();
-				ble.print("G");
-	            break;
-			default:	 // Unknown command - respond accordingly. RTFM
-				Serial.println("?");
-				break;
-		}
-	} else {
-		Serial.print("\nBT Unavailable.");
-		delay(2000);
-        status_led = !status_led;
-        digitalWrite(_ledPin, status_led); //Toggle LED output
+				// If data available
+				if (rn487xBle.readLocalCharacteristic(sensorHandle))
+				{
+					char commsByte;
+
+					sensorPayload = rn487xBle.getLastResponse();
+					if (sensorPayload != null )
+					{
+						commsByte = sensorPayload[0];
+
+						switch (commsByte) {
+							case '^':
+								sensorPayload[0] = "R";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								Serial.println("Received ready command");
+								break;
+							case 'X':
+								comms_EstablishContact();
+								sensorPayload[0] = "X";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								break;
+							case 'I':
+								sensorPayload[0] = "i";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								Serial.println("Initialise System");
+								System_Initialise(DEVICE, buffer);
+								sensorPayload[0] = "I";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								break;
+							case 'F':
+								files = getFiles(sd.open("/"), 0);
+								Serial.printf("Discovered %d files\n", files);
+								sensorPayload[0] = "F";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								break;
+							case 'T':
+								sensorPayload[0] = "t";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								sd_card = test_SD_datalog();
+								if (sd_card) {
+									sensorPayload[0] = "T";
+									rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+									Serial.println("Tests successful.");
+								}
+								else {
+									sensorPayload[0] = "X";
+									rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								}
+								break;
+							case 'C':
+								Serial.println("check sd status");
+								comms_SD_Status();
+								sensorPayload[0] = "C";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								break;
+							case 'S':
+								//ble.print("s");
+								System_Stream(DEVICE, buffer);
+								sensorPayload[0] = "S";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								break;
+							case 'L':
+								sensorPayload[0] = "l";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								SD_datalog();
+								sensorPayload[0] = "L";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+								break;
+							case 'G':	// get datafile
+								sensorPayload[0] = "g";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+					            SD_upload();
+								sensorPayload[0] = "G";
+								rn487xBle.writeLocalCharacteristic(sensorPayload, sensorHandle);
+					            break;
+							default:	 // Unknown command - respond accordingly. RTFM
+								Serial.println("?");
+								break;
+						}	// switch commsByte
+					}	// if payload != null
+				}	// if data available
+			} else {	// if connected
+				// Not connected to a peer device
+				Serial.println("Not connected to a central device");
+				// Delay inter connection polling - when not connected, check for new connections ever 1 second
+				delay(1000);
+			}
+			break;
+
+
+		case SOFTWARE_SERIAL:
+			if (ble.available() > 0)
+			{
+				int commsByte = ble.read();
+				Serial.print("\nCommand Recieved: ");
+				Serial.print(commsByte);
+				Serial.print("\n");
+
+				int files = 0;
+				bool sd_card = false;
+
+				switch (commsByte) {
+					case '^':
+						ble.print("RDY");
+						Serial.println("Received ready command");
+						break;
+					case 'X':
+						comms_EstablishContact();
+						ble.print("X");
+						break;
+					case 'I':
+						ble.print("i");
+						Serial.println("Initialise System");
+						System_Initialise(DEVICE, buffer);
+						ble.print("I");	// End of text stream
+						break;
+					case 'F':
+						files = getFiles(sd.open("/"), 0);
+						Serial.printf("Discovered %d files\n", files);
+						ble.print("F");
+						break;
+					case 'T':
+						ble.print("t");
+						sd_card = test_SD_datalog();
+						if (sd_card) {
+							ble.print("T");
+							Serial.println("Tests successful.");
+						} else ble.print("e");
+						break;
+					case 'C':
+						Serial.println("check sd status");
+						comms_SD_Status();
+						ble.print("C");
+						break;
+					case 'S':
+						//ble.print("s");
+						System_Stream(DEVICE, buffer);
+						ble.print("S");
+						break;
+					case 'L':
+						ble.print("l");
+						SD_datalog();
+						ble.print("L");
+						break;
+					case 'G':	// get datafile
+						ble.print("g");
+						SD_upload();
+						ble.print("G");
+						break;
+					default:	 // Unknown command - respond accordingly. RTFM
+						Serial.println("?");
+						break;
+				}
+			} else {
+				Serial.print("\nBT Unavailable.");
+				delay(2000);
+				status_led = !status_led;
+				digitalWrite(_ledPin, status_led); //Toggle LED output
+			}
+			break;
+
+		default:
+			// NO BLE PLATFORM SPECIFIED
+			break;
 	}
 }
 
