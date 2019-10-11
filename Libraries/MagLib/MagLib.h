@@ -65,6 +65,9 @@ public:
 	*/
 	~MagLib();
 
+	/*	Initialise I2C communication channels
+	 *	@param i2cLine I2C Channel to be initisalised.
+	 */
 	void initI2C(int i2cLine);
 
 	/*	Initalise sensing nodes for specific device
@@ -113,10 +116,21 @@ public:
 							uint8_t nI2C,
 							uint8_t nAddress);
 
+	/*	Setup device for use with client application.
+	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
+	 *	@param ledPin Teensy onboard LED pin.
+	 *	@param baud Baud rate for serial communication.
+	 */
 	void setupForClient(unsigned DEVICE, int ledPin, int baud);
 
+	/*	Initialise Brace+ system for use.
+	 *	@param buffer Array of bytes containing sensor init information.
+	 */
 	void initBrace(char *buffer);
 
+	/*	Read Brace+ system.
+	 *	@param buffer Array of bytes containing sensor data.
+	 */
 	void readBrace(char *buffer);
 
 	/*	Test a specific node on any sensor or array
@@ -128,22 +142,13 @@ public:
 	 */
 	void testNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
 
-/* ********** LabVIEW CLINENT FUNCTIONS ********** */
+/* ********** CLINENT FUNCTIONS ********** */
 
+	/*	Begin main communication interface with client application.
+	 *	@param DEVICE Specific Mag device to interface client with.
+	 *	@param buffer Array of bytes containing data.
+	 */
 	void comms_MainMenu(unsigned DEVICE, char *buffer);
-	void comms_EstablishContact();
-	void System_Initialise(unsigned DEVICE, char *buffer);
-	void comms_SystemCheck();
-	void System_Stream(unsigned DEVICE, char *buffer);
-
-	bool test_SD_datalog();
-
-	void comms_SD_Status();
-
-	void SD_datalog();
-
-	void SD_upload();
-
 
 /* ********** GLOBAL FUNCTIONS ********** */
 
@@ -185,11 +190,51 @@ public:
 
 private:
 
+	/**	Initialise communication with client application.
+	 */
+	void comms_EstablishContact();
+
+	/**	Initalise sensors for client application.
+	 *	@param DEVICE Specific Mag device to interface client with.
+	 *	@param buffer Array of bytes containing data.
+	 */
+	void System_Initialise(unsigned DEVICE, char *buffer);
+
+	/**	Perform a check of all the sensors within the system and report back to client.
+	 */
+	void comms_SystemCheck();
+
+	/**	Stream data to the client application.
+	 *	@param DEVICE Specific Mag device to interface client with.
+	 *	@param buffer Array of bytes containing data.
+	 */
+	void System_Stream(unsigned DEVICE, char *buffer);
+
+	/**	Test the Logging functionality of the system.
+	 *	@return true/false for successful/failed tests.
+	 */
+	bool test_SD_datalog();
+
+	/**	Report the status and info about the SD card back to the client.
+	 */
+	void comms_SD_Status();
+
+	/**	Continuously read the sensors and log to SD card.
+	 */
+	void SD_datalog();
+
+	/**	Upload file to the client application.
+	 */
+	void SD_upload();
+
 	/*  can be overloaded to use in loops and
 	* be used with a flexible number of muxes */
 	uint8_t setMux(unsigned int muxSet);
 
-	// Taken from Arduino.com
+	/** List all the files back to the client.
+	 *  @details Taken from Arduino.com
+	 *	@return number of files.
+	 */
 	int getFiles(File dir, int numTabs);
 
 
