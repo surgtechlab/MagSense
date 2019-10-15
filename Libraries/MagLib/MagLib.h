@@ -77,7 +77,6 @@ public:
 	 */
 	~MagLib();
 
-<<<<<<< HEAD
 	/**	Initalise system to use with client application.
 	 *	@param DEVICE device to interface with
 	 *	@param buffer array of chars to return data from sensors
@@ -86,10 +85,8 @@ public:
 
 	/** Initiase a specific I2C communication channel
 	 *  @param i2cLine I2C Channel to be initialised
-=======
-	/*	Initialise I2C communication channels
+	 *	Initialise I2C communication channels
 	 *	@param i2cLine I2C Channel to be initisalised.
->>>>>>> 348c4c84f83d40d53fab7457302d58d2ca465bc5
 	 */
 	void initI2C(int i2cLine);
 
@@ -139,10 +136,8 @@ public:
 							uint8_t nI2C,
 							uint8_t nAddress);
 
-<<<<<<< HEAD
 	/**	Test a specific node on any sensor or array
-=======
-	/*	Setup device for use with client application.
+	 *	Setup device for use with client application.
 	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
 	 *	or SoftwareSerial, i.e. HM10)
 	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
@@ -161,13 +156,12 @@ public:
 	 */
 	void initBrace(char *buffer);
 
-	/*	Read Brace+ system.
+	/**	Read Brace+ system.
 	 *	@param buffer Array of bytes containing sensor data.
 	 */
 	void readBrace(char *buffer);
 
-	/*	Test a specific node on any sensor or array
->>>>>>> 348c4c84f83d40d53fab7457302d58d2ca465bc5
+	/**	Test a specific node on any sensor or array
 	 *	@param buffer array of chars to return data from sensors
 	 *	@param zyxt selected desired axes/temperature values to read
 	 *	@param address address of specific node to test
@@ -176,23 +170,15 @@ public:
 	 */
 	void testNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
 
-<<<<<<< HEAD
-/* ********** Client FUNCTIONS ********** */
+	/* ********** CLINENT FUNCTIONS ********** */
 
-	/**	Main interface for client applications
-	 *	@param DEVICE device to interface with
-	 *	@param buffer array of chars to return data from sensors
-=======
-/* ********** CLINENT FUNCTIONS ********** */
-
-	/*	Begin main communication interface with client application.
+	/**	Begin main communication interface with client application.
 	 *	@param DEVICE Specific Mag device to interface client with.
 	 *	@param buffer Array of bytes containing data.
->>>>>>> 348c4c84f83d40d53fab7457302d58d2ca465bc5
 	 */
 	void comms_MainMenu(unsigned DEVICE, char *buffer);
 
-/* ********** GLOBAL FUNCTIONS ********** */
+	/* ********** GLOBAL FUNCTIONS ********** */
 
 	/** Print raw data to serial port.
 		@param buffer Packet of data containing info from sensors
@@ -226,8 +212,7 @@ public:
 
 private:
 
-<<<<<<< HEAD
- 	/** Establis a connection with the client application.
+ 	/** Establish a connection with the client application.
 	 */
 	void comms_EstablishContact();
 
@@ -263,46 +248,11 @@ private:
 	void SD_datalog();
 
  	/**	Upload a specific file to the client application from the SD card.
-=======
-	/**	Initialise communication with client application.
-	 */
-	void comms_EstablishContact();
-
-	/**	Initalise sensors for client application.
-	 *	@param DEVICE Specific Mag device to interface client with.
-	 *	@param buffer Array of bytes containing data.
-	 */
-	void System_Initialise(unsigned DEVICE, char *buffer);
-
-	/**	Perform a check of all the sensors within the system and report back to client.
-	 */
-	void comms_SystemCheck();
-
-	/**	Stream data to the client application.
-	 *	@param DEVICE Specific Mag device to interface client with.
-	 *	@param buffer Array of bytes containing data.
-	 */
-	void System_Stream(unsigned DEVICE, char *buffer);
-
-	/**	Test the Logging functionality of the system.
-	 *	@return true/false for successful/failed tests.
-	 */
-	bool test_SD_datalog();
-
-	/**	Report the status and info about the SD card back to the client.
-	 */
-	void comms_SD_Status();
-
-	/**	Continuously read the sensors and log to SD card.
-	 */
-	void SD_datalog();
-
-	/**	Upload file to the client application.
->>>>>>> 348c4c84f83d40d53fab7457302d58d2ca465bc5
+	 *	Initialise communication with client application.
 	 */
 	void SD_upload();
 
-	/*  can be overloaded to use in loops and
+	/**  can be overloaded to use in loops and
 	* be used with a flexible number of muxes */
 	uint8_t setMux(unsigned int muxSet);
 
@@ -312,8 +262,7 @@ private:
 	 */
 	int getFiles(File dir, int numTabs);
 
-<<<<<<< HEAD
-=======
+
 	// Custom GATT Profile for BLE Data Streaming
 	const char* magServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
 	const char* magCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom characteristic GATT
@@ -322,7 +271,6 @@ private:
 
 	char *magPayload;
 
->>>>>>> 348c4c84f83d40d53fab7457302d58d2ca465bc5
 	char mag_buffer[];
 
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
