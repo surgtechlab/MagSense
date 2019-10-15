@@ -33,18 +33,18 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAGTRIX       	100	// 6bytes * 16nodes + 4 time bytes
 #define BRACE			100 // 6bytes * 16nodes + 4 time bytes
 #define MAGBOARD       	388	// 6bytes * 64nodes + 4 time bytes
+#define MAGBOARD128		772	// 6bytes * 128nodes + 4 time bytes
 
 #define NADDR			4
 
 // ****** BLE Definitions ****** //
-#define SOFTWARE_SERIAL 1
-#define HARDWARE_SERIAL 2
+#define HM10 	1
+#define RN4781 	2
 
-#define ble 			Serial1
+#define ble Serial1
 
 // Maximuim number of milliseconds to wait for USB serial to get ready on boot
 #define SERIAL_TIMEOUT_MS 5000
-
 
 // ****** Brace+ Definitions ****** //
 #define LED_GREEN		27
@@ -152,8 +152,9 @@ public:
 	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud);
 
 	/**	Initalise Bluetooth Low Energy device
+	 *	@return bool true if initialisation successful.
 	 */
-	void initBLE();
+	bool initBLE();
 
 	/*	Initialise Brace+ system for use.
 	 *	@param buffer Array of bytes containing sensor init information.
@@ -209,12 +210,6 @@ public:
 	/**	Initialise SD Card to record data from sensors
 	*/
 	void initSDCard();
-
-	/** Print data to SD card for external memory
-		@param buffer Packet of data containing info from sensors.
-		@param size Size of data packet
-	*/
-	void printToSDCard(char *buffer, int size);
 
 	void SDCardStatus();
 
@@ -320,11 +315,12 @@ private:
 <<<<<<< HEAD
 =======
 	// Custom GATT Profile for BLE Data Streaming
-	const char* sensorServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
-	const char* sensorCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom characteristic GATT
-	const uint8_t sensorCharacteristicLen = MAGBOARD;    // Data length (bytes)
-	const uint8_t sensorHandle = 0x75;
-	char sensorPayload[sensorCharacteristicLen*2 + 1];
+	const char* magServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
+	const char* magCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom characteristic GATT
+	const uint8_t magCharacteristicLen = 100;    // Data length (bytes)
+	const uint8_t magHandle = 0x75;
+
+	char *magPayload;
 
 >>>>>>> 348c4c84f83d40d53fab7457302d58d2ca465bc5
 	char mag_buffer[];
