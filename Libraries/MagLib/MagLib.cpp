@@ -419,6 +419,45 @@ void MagLib::readSensingNodes(	char *buffer,
 	t_old = time;
 }
 
+void MagLib::testNode(	char *receiveBuffer,
+						char zyxt,
+						uint8_t address,
+						uint8_t i2cID,
+						uint8_t muxID)
+{
+	uint8_t GAIN_SEL = 0x00;  //
+	uint8_t RES_XYZ = 0x01;  //
+	uint8_t DIG_FILT = 0x1;
+	uint8_t OSR = 0x1;
+	uint8_t node = (address-0x0C) + (i2cID*8) + (muxID*32);
+
+	// Reset and test a specific chip
+	setMux(muxID);
+	delay(50);
+
+	Serial.printf("Testing Node %d: MLX:L%d\tA:0x%x\tMUX:%d\n", node, i2cID, address, muxID);
+
+	nodeAddrObj[address].resetDevice(receiveBuffer, zyxt, i2cID);
+	Serial.printf("Resetting...\n");
+	delay(1000);
+
+	Serial.printf("Init & config node...\n");
+	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID);
+	nodeAddrObj[address].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
+	nodeAddrObj[address].startBurstMode(receiveBuffer, zyxt, i2cID);
+	delay(500);
+
+	Serial.printf("Reading node...\n");
+	nodeAddrObj[address].RequestMeasurement(receiveBuffer, zyxt, i2cID);
+	nodeAddrObj[address].AsyncRxFill(receiveBuffer, zyxt, i2cID);
+	//While there's no bytes available to read, do nothing...
+	while(!nodeAddrObj[address].measureReady(i2cID));
+	//Data ready - so read
+	nodeAddrObj[address].takeMeasure(receiveBuffer,i2cID);
+
+	printASCIIData(receiveBuffer, NODE_SINGLE);
+}
+
 void MagLib::initBrace(char *buffer)
 {
 	Serial.begin(115200);
@@ -1101,46 +1140,6 @@ void MagLib::SD_upload()
 
 	file.close();
 	digitalWrite(_ledPin, LOW); //Set StatusLED ON during write
-}
-
-void MagLib::testNode(	char *receiveBuffer,
-						char zyxt,
-						uint8_t address,
-						uint8_t i2cID,
-						uint8_t muxID)
-{
-	uint8_t GAIN_SEL = 0x00;  //
-	uint8_t RES_XYZ = 0x01;  //
-	uint8_t DIG_FILT = 0x1;
-	uint8_t OSR = 0x1;
-
-	Serial.begin(9600);
-
-	// Reset and test a specific chip
-	setMux(muxID);
-	delay(50);
-
-	Serial.printf("Testing MLX:L%d\tA:0x%x\tMUX:%d\n", i2cID, address, muxID);
-
-	nodeAddrObj[address].resetDevice(receiveBuffer, zyxt, i2cID);
-	Serial.printf("Resetting...\n");
-	delay(1000);
-
-	Serial.printf("Init & config node...\n");
-	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID);
-	nodeAddrObj[address].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
-	nodeAddrObj[address].startBurstMode(receiveBuffer, zyxt, i2cID);
-	delay(500);
-
-	Serial.printf("Reading node...\n");
-	nodeAddrObj[address].RequestMeasurement(receiveBuffer, zyxt, i2cID);
-	nodeAddrObj[address].AsyncRxFill(receiveBuffer, zyxt, i2cID);
-	//While there's no bytes available to read, do nothing...
-	while(!nodeAddrObj[address].measureReady(i2cID));
-	//Data ready - so read
-	nodeAddrObj[address].takeMeasure(receiveBuffer,i2cID);
-
-	printASCIIData(receiveBuffer, NODE_SINGLE);
 }
 
 void MagLib::printRawData(char *buffer, int format, int size)
