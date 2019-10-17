@@ -400,8 +400,6 @@ void MagLib::readSensingNodes(	char *buffer,
 					buffer[i+packetOffset] = receiveBuffer[i+3];
 				}
 				node++;
-
-				delay(20);
 			}
 		}
 	} //End for

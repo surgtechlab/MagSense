@@ -1,0 +1,41 @@
+Magboard 128 Node - Layout
+
+Board node | Array index
+-------------------------
+Node 0 	   | 0
+Node 1     | 1
+Node 2 	   | 2
+Node 3     | 3
+Node 4 	   | 8
+Node 5     | 9
+Node 6 	   | 10
+Node 7     | 11
+Node 8 	   | 4
+Node 9     | 5
+Node 10	   | 6
+Node 11    | 7
+Node 12    | 12
+Node 13    | 13
+Node 14    | 14
+Node 15    | 15
+Node 16	   | 27
+Node 17    | 26
+Node 18	   | 25
+Node 19    | 24
+Node 20	   | 19
+Node 21    | 18
+Node 22	   | 17
+Node 23    | 16
+Node 24	   | 31
+Node 25    | 30
+Node 26	   | 29
+Node 27    | 28
+Node 28    | 23
+Node 29    | 22
+Node 30    | 21
+Node 31    | 20
+
+Assuming top left chip is 0 and bottom right is 127.
+
+For each multiplexer, add (32*muxID) to all values 
+(i.e above shows muxID = 0, nodes 0 - 31).
