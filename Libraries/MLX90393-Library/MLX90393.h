@@ -135,6 +135,7 @@ private:
 	void printError(uint8_t error);
 
 	int _I2CAddress;
+	int backup_address;
 
 	int verbosefb = 1;
 

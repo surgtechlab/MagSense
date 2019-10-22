@@ -94,7 +94,7 @@ void MagLib::initI2C(int i2cID)
 	thisWire->setDefaultTimeout(200000);
 
 	thisWire->setOpMode(I2C_OP_MODE_ISR);
-	thisWire->setRate(I2C_RATE_400);
+	thisWire->setRate(I2C_RATE_800);
 }
 
 bool MagLib::initBLE()
@@ -269,6 +269,7 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 								uint8_t DIG_FILT,
 								uint8_t OSR)
 {
+	uint8_t node = 0;
 	//LOOP through the MUX states
 	for(uint8_t muxId=0; muxId < nMUX; muxId++)
 	{
@@ -282,9 +283,12 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
+				Serial.printf("\nInit node: %d\n", node);
 				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId);
 				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
+				
+				node++;
 			} //end address loop
 		}//end i2c loop
 	}//end MUX loop
@@ -350,12 +354,14 @@ void MagLib::readSensingNodes(	char *buffer,
 								uint8_t nI2C,
 								uint8_t nAddress)
 {
+	Serial.flush();
+	
 	//Pack the current time into the receiveBuffer
 	unsigned long time = millis();
 
 	uint8_t node = 0;
 	uint8_t errors = 0;
-	uint8_t error_nodes[MAGBOARD];
+	uint8_t error_nodes[FOOTPLATE];
 
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
 	for(uint8_t muxId =0; muxId < nMUX; muxId++)
@@ -377,21 +383,27 @@ void MagLib::readSensingNodes(	char *buffer,
 			}
 			//READ LOOP
 			for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
+				//Serial.println("1");
 				//While there's no bytes available to read, do nothing...
 				while(!nodeAddrObj[nodeId].measureReady(i2cID));
-
+				//Serial.println("2");
+				//Serial.println("*** taking measurement...");
 				//Data ready - so read
 				nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
+				
+				
+				//Serial.println(node);
 
-				// Check error bit
-				if (receiveBuffer[0] & 0x10) {
+ 				// Check error bit
+				/* if (receiveBuffer[0] & 0x10) {
 					errors++;
 					error_nodes[errors] = node;
-				}
-
-				Serial.printf("Node: %d, status: %x, data:  ", node, receiveBuffer[0]);
+				} */
+				//delay(5);
+				/* Serial.printf("Node %d | MLX:L%d\tA:0x%x \t MUX:%d \t ", node, i2cID, nodeAddrObj[nodeId].getAddress(), muxId);
+				Serial.printf("status: %x, data:  ", receiveBuffer[0]);
 				for (int i = 3; i<9;i++)Serial.print(receiveBuffer[i], HEX);
-				Serial.println();
+				Serial.println(); */
 
 				//Work out the address
 				uint16_t packetOffset = (muxId*96)+(i2cID*24)+(nodeId*6)+4;
@@ -405,14 +417,14 @@ void MagLib::readSensingNodes(	char *buffer,
 	} //End for
 
 	// Report back errors
-	Serial.printf("\n*** Completed with %d errors on chips: ", errors);
+ 	/* Serial.printf("*** Completed with %d errors on chips: ", errors);
 	for (int i = 0; i < errors; i++) Serial.printf("%d ", error_nodes[i]);
-	Serial.println();
-
-	buffer[3] = (time) & 255;
-	buffer[2] = ((time)>>8) & 255;
-	buffer[1] = ((time)>>16) & 255;
-	buffer[0] = ((time)>>24) & 255;
+	Serial.println(); */
+ 
+	buffer[0] = (time) & 255;
+	buffer[1] = ((time)>>8) & 255;
+	buffer[2] = ((time)>>16) & 255;
+	buffer[3] = ((time)>>24) & 255;
 
 	t_old = time;
 }
@@ -423,23 +435,20 @@ void MagLib::testNode(	char *receiveBuffer,
 						uint8_t i2cID,
 						uint8_t muxID)
 {
+	Serial.println("\n/*** SINGLE NODE TESTS ***/\n");
+	
 	uint8_t GAIN_SEL = 0x00;  //
 	uint8_t RES_XYZ = 0x01;  //
 	uint8_t DIG_FILT = 0x1;
 	uint8_t OSR = 0x1;
-	uint8_t node = (address-0x0C) + (i2cID*8) + (muxID*32);
+	uint8_t node = (address - 0x0C) + (i2cID)*8 + (muxID)*32;
 
 	// Reset and test a specific chip
 	setMux(muxID);
 	delay(50);
 
-	Serial.printf("Testing Node %d: MLX:L%d\tA:0x%x\tMUX:%d\n", node, i2cID, address, muxID);
-
-	nodeAddrObj[address].resetDevice(receiveBuffer, zyxt, i2cID);
-	Serial.printf("Resetting...\n");
-	delay(1000);
-
-	Serial.printf("Init & config node...\n");
+	Serial.printf("Node %d: ", node);
+	
 	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID);
 	nodeAddrObj[address].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 	nodeAddrObj[address].startBurstMode(receiveBuffer, zyxt, i2cID);
@@ -455,6 +464,16 @@ void MagLib::testNode(	char *receiveBuffer,
 
 	printASCIIData(receiveBuffer, NODE_SINGLE);
 }
+
+void MagLib::readNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID)
+{
+	nodeAddrObj[address].RequestMeasurement(buffer, zyxt, i2cID);
+	nodeAddrObj[address].AsyncRxFill(buffer, zyxt, i2cID);
+	//While there's no bytes available to read, do nothing...
+	while(!nodeAddrObj[address].measureReady(i2cID));
+	//Data ready - so read
+	nodeAddrObj[address].takeMeasure(buffer,i2cID);
+}		
 
 void MagLib::initBrace(char *buffer)
 {

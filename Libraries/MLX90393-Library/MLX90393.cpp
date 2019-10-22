@@ -34,6 +34,8 @@ MLX90393::~MLX90393()
 void MLX90393::init(char *receiveBuffer, int address, int i2cLine, int muxId)
 {
 	_I2CAddress = address;
+	backup_address = address;
+	
 	uint8_t i_status = 0;
 
 	Serial.printf("Init MLX:L%d\tA:0x%x\tMUX:%d\t", i2cLine, _I2CAddress, muxId);
@@ -371,6 +373,8 @@ uint8_t MLX90393::measureReady(uint8_t i2cLine)
 	/*This is still just a pointer, so when we run commands, we must
 	deference it using ->*/
 
+	//Serial.printf("Stuck on i2c line: %d\n", i2cLine);
+	//delay(10);
 	//Has it finished transmitting the previous asynchronous requests?
 	//And are there the correct number of bytes available?
 	return (thisWire->done());
@@ -407,6 +411,8 @@ uint8_t MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
 	for(uint8_t bufIdx=3; bufIdx < RCVBUFSZ; bufIdx++) {
 		receiveBuffer[bufIdx] = thisWire->read(); //xMag msb
     }
+	
+	thisWire->flush();
 
 	//The buffer is one too big! Woops!
 	//receiveBuffer[8] = 0;
@@ -428,6 +434,13 @@ void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 	it returns the address of Wire, for 1 it returns address of Wire1 etc...
 	All the -> does it derefernce that pointer, aka go to that address and
 	perform beginTransmsion on that object not the address.*/
+	
+	/*Serial.print("ADDRESS: 0x");
+	Serial.println(_I2CAddress, HEX);
+	
+	Serial.print("BACKUP ADDRESS: 0x");
+	Serial.println(backup_address, HEX);*/
+	if (_I2CAddress > 0x13) _I2CAddress = backup_address;
 
 	WhichWire(i2cLine)->beginTransmission(_I2CAddress);	// Start I2C Transmission
 	WhichWire(i2cLine)->write(select);					// Read measurement command (ZXYT = 1111)
@@ -440,7 +453,7 @@ void MLX90393::AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine){
 	i2c_t3* thisWire = WhichWire(i2cLine);
 
 	while(!(thisWire->done()));
-	thisWire->sendRequest(_I2CAddress, 7, I2C_STOP);		// Request 9 bytes of data
+	thisWire->sendRequest(_I2CAddress, 7, I2C_STOP);		// Request 7 bytes of data
 	//Serial.println("Have requested!");
 }
 
@@ -583,5 +596,7 @@ i2c_t3* MLX90393::WhichWire(uint8_t wireNo)
 //Return address packet, depending on device
 int MLX90393::getAddress()
 {
+	//if (_I2CAddress != backup_address) _I2CAddress = backup_address;
+	
 	return _I2CAddress;
 }

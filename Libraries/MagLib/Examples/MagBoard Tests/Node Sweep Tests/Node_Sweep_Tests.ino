@@ -21,22 +21,28 @@ void setup()
 	char addr[8] = { 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13 };
 	
 	// Initialise Serial port and all devices
-	Serial.begin(115200);
+	Serial.begin();
 	magboard.initSensingNodesFor(MAGBOARD128, 115200, buffer);
 	
 	uint8_t node;
-  int test = 0;
 	
 	// Begin sweep through all nodes
 	for (int muxID = 0; muxID < n_MUX; muxID++) {
+		
 		for (int i2cID = 0; i2cID < n_I2C; i2cID++) {
+			
 			for (int nodeID = 0; nodeID < n_Addr; nodeID++) {
 				
 				// Test node and report back errors
-				magboard.testNode(buffer, zyxt, nodeID, i2cID, muxID);
+				//magboard.testNode(buffer, zyxt, nodeID, i2cID, muxID);
+				node = (nodeID-0x0C)*8 + (i2cID*16) + (muxID+32);
+				Serial.println(node, DEC);
+				
+				delay(1000);
 			}
 		}
 	}
+	
 }
 
 void loop() {	

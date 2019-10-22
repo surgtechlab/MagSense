@@ -33,9 +33,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define MAGTRIX       	100	// 6bytes * 16nodes + 4 time bytes
 #define BRACE			100 // 6bytes * 16nodes + 4 time bytes
 #define MAGBOARD       	388	// 6bytes * 64nodes + 4 time bytes
-#define MAGBOARD128		772	// 6bytes * 128nodes + 4 time bytes
+#define FOOTPLATE		772	// 6bytes * 128nodes + 4 time bytes
 
-#define NADDR			4
+#define NADDR			8
 
 // ****** BLE Definitions ****** //
 #define HM10 	1
@@ -53,7 +53,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // *********** SD Card Config ************* //
 // Size of read/write buffer
-const size_t BUF_SIZE = 512; //bytes
+const size_t BUF_SIZE = 1024; //bytes
 // Size logging file in MB where MB = 1,000,000 bytes.
 const uint32_t FILE_SIZE_MB = 5;
 // File size in bytes.
@@ -151,7 +151,7 @@ public:
 	 */
 	bool initBLE();
 
-	/*	Initialise Brace+ system for use.
+	/**	Initialise Brace+ system for use.
 	 *	@param buffer Array of bytes containing sensor init information.
 	 */
 	void initBrace(char *buffer);
@@ -169,8 +169,10 @@ public:
 	 *	@param muxID Multiplexer channel of the desired node
 	 */
 	void testNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
+	
+	void readNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
 
-	/* ********** CLINENT FUNCTIONS ********** */
+	/** ********** CLINENT FUNCTIONS ********** */
 
 	/**	Begin main communication interface with client application.
 	 *	@param DEVICE Specific Mag device to interface client with.
@@ -178,7 +180,7 @@ public:
 	 */
 	void comms_MainMenu(unsigned DEVICE, char *buffer);
 
-	/* ********** GLOBAL FUNCTIONS ********** */
+	/** ********** GLOBAL FUNCTIONS ********** */
 
 	/** Print raw data to serial port.
 		@param buffer Packet of data containing info from sensors
@@ -204,10 +206,11 @@ public:
 	void closeSDCard();
 
 	/** Print time taken to get 1000 readings - 4 Node
-	*/
+	 */
 	void TimeMeasurement(float TimeTaken);
 
-	// Print an error to the serial port function
+	/** Print an error to the serial port function
+	 */
 	void MagError(char *err);
 
 private:
