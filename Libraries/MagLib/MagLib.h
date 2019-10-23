@@ -23,13 +23,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define NODE_SINGLE   	10	// 3axes * 2bytes per axis + 4 time bytes
 #define NODE_FOUR		28	// 6bytes * 4nodes + 4 time bytes
 #define NODE_8			52	// 6bytes * 8nodes + 4 time bytes
+#define NODE_12			76	// 6bytes * 12nodes + 4 time bytes
 #define NODE_16       	100	// 6bytes * 16nodes + 4 time bytes
 #define NODE_32       	196	// 6bytes * 32nodes + 4 time bytes
 #define NODE_64       	388	// 6bytes * 64nodes + 4 time bytes
 #define NODE_128       	772	// 6bytes * 128nodes + 4 time bytes
 
 #define MAGONE			10  // 3axes * 2bytes per axis + 4 time bytes
-#define HAILO     		28	// 6bytes * 4nodes + 4 time bytes
+#define HAILO     		76	// 6bytes * 12nodes + 4 time bytes
 #define MAGTRIX       	100	// 6bytes * 16nodes + 4 time bytes
 #define BRACE			100 // 6bytes * 16nodes + 4 time bytes
 #define MAGBOARD       	388	// 6bytes * 64nodes + 4 time bytes
@@ -40,6 +41,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // ****** BLE Definitions ****** //
 #define HM10 	1
 #define RN4781 	2
+#define USB_COMMS 3
 
 #define ble Serial1
 
@@ -77,11 +79,11 @@ public:
 	 */
 	~MagLib();
 
-	/**	Initalise system to use with client application.
+/* 	/**	Initalise system to use with client application.
 	 *	@param DEVICE device to interface with
 	 *	@param buffer array of chars to return data from sensors
 	 */
-	void setupForClient(unsigned DEVICE, int ledPin, int baud);
+	//void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud); */
 
 	/** Initiase a specific I2C communication channel
 	 *  @param i2cLine I2C Channel to be initialised
@@ -254,6 +256,14 @@ private:
 	 *	Initialise communication with client application.
 	 */
 	void SD_upload();
+	
+	/** Print details about specific node to serial port
+	 * 	@param buffer Pointer to char array holding data.
+	 *	@param muxID Multiplexer line being used.
+	 *	@param i2cID I2C line being used.
+	 *	@param nodeID ID of node within I2C bus to be addressed.
+	 */
+	void debug(char *buffer, uint8_t muxID, uint8_t i2cID, uint8_t nodeID);
 
 	/**  can be overloaded to use in loops and
 	* be used with a flexible number of muxes */
@@ -321,7 +331,7 @@ private:
 	SdFile file;
 
 	// Bluetooth device
-	SoftwareSerial ble_ss;
+	//SoftwareSerial ble_ss;
 };
 
 #endif /* MAGLIB_H */
