@@ -2,7 +2,7 @@
 
 MagLib device;
 
-char buffer[FOOTPLATE];
+char buffer[MAGBOARD128];
 
 // Initiate file system
 SdFatSdioEX sd;
@@ -10,7 +10,6 @@ SdFatSdioEX sd;
 SdFile file;
 
 int _ledPin = 13;
-bool led = false;
 
 unsigned long t_old = 0;
 
@@ -18,13 +17,11 @@ unsigned long t_old = 0;
 char SDbuf[BUF_SIZE];
 
 // Data file name
-char filename[64] = "FP_XYZ_0.dat";
+char filename[64] = "footplate_002.txt";
 
 void setup() {
 
   Serial.begin(115200);
-
-  pinMode(13, OUTPUT);
   
   // put your setup code here, to run once:
   //Begin the SdFAT file process
@@ -36,23 +33,17 @@ void setup() {
     Serial.println("SD Card Initialised");
   }
   
-  device.initSensingNodesFor(FOOTPLATE, 115200, buffer);
+  device.initSensingNodesFor(MAGBOARD128, 115200, buffer);
 
-  // Write 10 files
-  for (uint8_t i = 1; i < 10; i++){ 
-
-    sprintf(filename, "FP_TEST_%d.dat", i);
-
-    write_to_file(filename);
-  }
+  write_to_file();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
+
 }
 
-void write_to_file(char *_file) {
+void write_to_file() {
 
   char input_byte;
   uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
@@ -71,11 +62,11 @@ void write_to_file(char *_file) {
   SDbuf[BUF_SIZE-2] = 'Y';
   SDbuf[BUF_SIZE-1] = 'Z';
   
-  Serial.print("\nLogging. Filename=");
-  Serial.println(_file);
+  Serial.print("Logging. Filename=");
+  Serial.println(filename);
   
   // Create file (truncate existing file)
-  if (!file.open(_file, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
+  if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
     Serial.println("ERROR: file open failed");
     return;
   } else {
@@ -83,27 +74,23 @@ void write_to_file(char *_file) {
     Serial.println("File open OK");
   }
   
+  digitalWrite(13, HIGH); //Set StatusLED ON during write
+
   //*** LOGGING LOOP ******************
   log_start_time = millis();
-
-  Serial.flush();
 
   for (uint32_t i = 0; i < max_writes; i++) {
     
     m = micros();                 //read time
-    device.readSensingNodesFor(FOOTPLATE, SDbuf);    //take reading
+    
+    device.readSensingNodesFor(MAGBOARD128, SDbuf);    //take reading
+    
     write_size = file.write(SDbuf, BUF_SIZE);
   
     // Print percentage of cycle
     for (int j = 0; j < max_writes; j+=max_writes/10) if (i == j)
       Serial.printf("%d%%\n", j/(max_writes/100));
-
-    // Blink LED for every 1% of file written
-    for (int j = 0; j < max_writes; j+=max_writes/100) if (i == j) {
-      digitalWrite(13, led);
-      led = !led;
-    }
-     
+    
     if (write_size != BUF_SIZE) {
       sd.errorPrint("write failed");
       file.close();
@@ -114,13 +101,13 @@ void write_to_file(char *_file) {
     
     //Regulate loop rate here*
     do {
-      delayMicroseconds(100);
+      delay(1);
       m =  micros();
     } while ( (m - m_last) < loop_dt);
     
     m_last = m;
     //************************
-      
+    
     num_writes = i;
   } //End write loop *****************
 
@@ -134,11 +121,8 @@ void write_to_file(char *_file) {
   Serial.print(" of ");
   Serial.println(max_writes);
 
- //Print Performance Information to USB Serial
- Serial.print("\nAverage Loop Time (ms): ");
- Serial.println( log_elapsed_time/num_writes );
- 
- Serial.print("\nTotal time elapsed: ");
- Serial.print( log_elapsed_time/1000 );
- Serial.println("s");
+   //Print Performance Information to USB Serial
+   Serial.print("\nAverage Loop Time (ms): ");
+   Serial.println( log_elapsed_time/num_writes );
 }
+

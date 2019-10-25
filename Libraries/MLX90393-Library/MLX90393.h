@@ -52,7 +52,7 @@ public:
 	 *	@param receiveBuffer Returns a status byte.
 	 *	@param Address I2C Address of MLX90393 device for comms on the I2C bus.
 	 */
-	void init(char *receiveBuffer, int address, int i2cLine, int muxId);
+	void init(char *receiveBuffer, int address, int i2cLine, int muxId, bool verbose);
 
 	/** Configure device by setting gain, hall_config and address register.
 	 *	@param receiveBuffer Returns a status byte.
@@ -123,7 +123,7 @@ public:
 private:
 
 	// Bluetooth device
-	SoftwareSerial ble;
+	//SoftwareSerial ble;
 
 	uint8_t* i2cCommsWrapper(i2c_t3* wire, uint8_t* data, int request);
 
@@ -137,7 +137,7 @@ private:
 	int _I2CAddress;
 	int backup_address;
 
-	int verbosefb = 1;
+	bool verbosefb;
 
 	uint8_t _error;
 

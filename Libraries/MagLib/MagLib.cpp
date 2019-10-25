@@ -31,12 +31,13 @@ MagLib::~MagLib()
 
 }
 
-void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud)
+void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool verbose)
 {
 	PLATFORM = platform;
 	_DEVICE = DEVICE;
 	_ledPin = ledPin;
 	serial_baud = baud;
+	verbosefb = verbose;
 
 	pinMode(_ledPin, OUTPUT);
     digitalWrite(_ledPin, LOW);
@@ -55,11 +56,11 @@ void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud)
 
 	//Begin the SdFAT file process
 	if (!sd.begin()) {
-	  sd.initErrorHalt();
-	  Serial.println("ERROR: SD Card Initialisation");
+		sd.initErrorHalt();
+		if (verbosefb) Serial.println("ERROR: SD Card Initialisation");
 	}
 	else {
-	  Serial.println("SD Card Initialised");
+	  if (verbosefb) Serial.println("SD Card Initialised");
 	}
 
 	// Initialise bluetooth according to specified platform.
@@ -84,11 +85,13 @@ void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud)
 			while(1);
 			break;
 	}
+	
+	Serial.println("RDY");
 }
 
 void MagLib::initI2C(int i2cID)
 {
-	Serial.printf("Init i2c: %d\n", i2cID);
+	if (verbosefb) Serial.printf("Init i2c: %d\n", i2cID);
 
 	i2c_t3* thisWire = WhichWire(i2cID);
 
@@ -158,11 +161,11 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 {
 	if (!Serial) Serial.begin(BAUD);
 
-	Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
-	//while (!Serial) { SysCall::yield(); }
-
-	Serial.println("\nInitialising Mux...");
-
+	if (verbosefb) {
+		Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
+		Serial.println("\nInitialising Mux...");
+	}
+	
 	// Initialise mux Pins
 	pinMode(_mux[0], OUTPUT);
 	pinMode(_mux[1], OUTPUT);
@@ -187,7 +190,7 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 	uint8_t nMUX;
 	char zyxt = 0xE;
 	uint8_t GAIN_SEL = 0x00;  //
-	uint8_t RES_XYZ = 0x01;  //
+	uint8_t RES_XYZ = 0x00;  //
 	uint8_t DIG_FILT = 0x1;
 	uint8_t OSR = 0x1;
 
@@ -241,11 +244,13 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 			nMUX = 4;
 			nI2C = 4;
 			nAddress = 8;
-			Serial.println("FootPlate is Alive!"); //Signify system active and print version info
-			Serial.println(__FILE__);
-			Serial.println(__DATE__);
-			Serial.println(__TIME__);
-			Serial.println("****");
+			if (verbosefb) {
+				Serial.println("FootPlate is Alive!"); //Signify system active and print version info
+				Serial.println(__FILE__);
+				Serial.println(__DATE__);
+				Serial.println(__TIME__);
+				Serial.println("****");
+			}
 			break;
 		default:		// default to single node device
 			nMUX = 1;	// minimum of 1 to keep log2() function happy
@@ -258,12 +263,14 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 
 	// Init required i2c channels
 	for (int i = 0; i < nI2C; i++) initI2C(i);
-	Serial.println("Initialised I2C Bus");
+	if (verbosefb) Serial.println("Initialised I2C Bus");
 
 	initSensingNodes(NodeAddresses, receiveBuffer, nMUX, nI2C, nAddress, zyxt, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 
-	Serial.printf("\n*** Initialisation complete | ");
-	Serial.printf("time taken: %g s\n", (millis() - _t)/1000.0f);
+	if (verbosefb) {
+		Serial.printf("\n*** Initialisation complete | ");
+		Serial.printf("time taken: %g s\n", (millis() - _t)/1000.0f);
+	}
 }
 
 void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
@@ -287,16 +294,13 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 		//LOOP through each I2C line
 		for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++)
 		{
-			Serial.printf("I2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
+			//Serial.printf("I2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
-				Serial.printf("\nInit node: %d\n", node);
-				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId);
+				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId, verbosefb);
 				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
-				
-				node++;
 			} //end address loop
 		}//end i2c loop
 	}//end MUX loop
@@ -474,7 +478,7 @@ void MagLib::testNode(	char *receiveBuffer,
 
 	Serial.printf("Node %d: ", node);
 	
-	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID);
+	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID, false);
 	nodeAddrObj[address].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 	nodeAddrObj[address].startBurstMode(receiveBuffer, zyxt, i2cID);
 	delay(500);
@@ -781,66 +785,63 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 			if (Serial.available() > 0)
 			{
 				int commsByte = Serial.read();
-				Serial.print("\nCommand Recieved: ");
-				Serial.print(commsByte);
-				Serial.print("\n");
-
+				if (verbosefb) {
+					Serial.print("\nCommand Recieved: ");
+					Serial.print(commsByte);
+					Serial.print("\n");
+				}
+				
 				int files = 0;
 				bool sd_card = false;
 
 				switch (commsByte) {
 					case '^':
-						Serial.print("RDY");
 						Serial.println("Received ready command");
 						break;
 					case 'X':
 						comms_EstablishContact();
-						Serial.print("X");
+						Serial.print("^");
 						break;
 					case 'I':
-						Serial.print("i");
-						Serial.println("Initialise System");
 						System_Initialise(DEVICE, buffer);
-						ble.print("I");	// End of text stream
+						Serial.print("\n^");	// End of text stream
 						break;
 					case 'F':
 						files = getFiles(sd.open("/"), 0);
 						Serial.printf("Discovered %d files\n", files);
-						Serial.print("F");
+						Serial.print("^");
 						break;
 					case 'T':
-						Serial.print("t");
 						sd_card = test_SD_datalog();
 						if (sd_card) {
-							Serial.print("T");
+							Serial.print("^");
 							Serial.println("Tests successful.");
 						} else Serial.print("e");
 						break;
 					case 'C':
-						Serial.println("check sd status");
 						comms_SD_Status();
-						Serial.print("C");
+						Serial.print("^");
 						break;
 					case 'S':
-						//ble.print("s");
 						System_Stream(DEVICE, buffer);
-						Serial.print("S");
+						Serial.print("^");
 						break;
 					case 'L':
 						SD_datalog();
-						Serial.print("L");
+						Serial.print("^");
 						break;
 					case 'G':	// get datafile
-						Serial.print("g");
 						SD_upload();
-						Serial.print("G");
+						Serial.print("^");
+						break;
+					case '?':
+						menu_help();
 						break;
 					default:	 // Unknown command - respond accordingly. RTFM
 						Serial.println("?");
 						break;
 				}
 			} else {
-				//Serial.print("\n");
 				delay(2000);
 				status_led = !status_led;
 				digitalWrite(_ledPin, status_led); //Toggle LED output
@@ -859,7 +860,7 @@ void MagLib::System_Initialise(unsigned DEVICE, char *receiveBuffer)
 {
 	initSensingNodesFor(DEVICE, serial_baud, receiveBuffer);
 
-	Serial.println("\nSystem Active");
+	if (verbosefb) Serial.println("\nSystem Active");
 }
 
 void MagLib::System_Stream(unsigned DEVICE, char *buffer)
@@ -870,23 +871,42 @@ void MagLib::System_Stream(unsigned DEVICE, char *buffer)
 	char writeBuffer[12];
 	char counter = 0;
 	int size;
+	
+	switch (PLATFORM) {
+		
+		case RN4781:
+		
+			ble.flush();
 
-	ble.flush();
+			do {
+				//TAKE READING FROM MAGBOARD
+				readSensingNodesFor(DEVICE, buffer);
+				size = ble.write(buffer, DEVICE);
+				// Wait for packet acknowledgement
+				while (ble.available() < 1) { }
+				commsByte = ble.read();
+			} while (commsByte == 83);
+					
+			break;
+		
+		case USB_COMMS:
+		
+			while (commsByte != '^') {
+				//TAKE READING FROM MAGBOARD
+				readSensingNodesFor(DEVICE, buffer);
+				size = Serial.write(buffer, DEVICE);
+				if (Serial.available()) commsByte = Serial.read();
+			}
+		
+			break;
+			
+		default:
+			Serial.println("No streaming platform selected");
+			break;
+		
+	}
 
-	do {
-		//TAKE READING FROM MAGBOARD
-		readSensingNodesFor(DEVICE, buffer);
-
-		size = ble.write(buffer, DEVICE);
-
-		// Wait for packet acknowledgement
-		while (ble.available() < 1) { }
-
-		commsByte = ble.read();
-
-	} while (commsByte == 83);
-
-	Serial.println("\nStream stopped.");
+	if (verbosefb) Serial.println("\nStream stopped.");
 }
 
 void MagLib::comms_SystemCheck()
@@ -1067,7 +1087,7 @@ void MagLib::comms_SD_Status()
 
 	sd.ls(LS_R | LS_DATE | LS_SIZE); 	//SD file listing to Serial
 }
-
+ 
 void MagLib::SD_datalog()
 {
 	char input_byte;
@@ -1089,11 +1109,7 @@ void MagLib::SD_datalog()
 	
 	bool led = false;
 
-	//**********************************************
-	Serial.println("Getting filename...");
-	
-	Serial.printf("Platform: %d\n", PLATFORM);
-	
+	//**********************************************	
 	switch (PLATFORM) {
 		
 		case RN4781:
@@ -1134,23 +1150,34 @@ void MagLib::SD_datalog()
 		case HM10:
 			break;
 			
-		case USB_COMMS:
+		case 3:
 			//Set log-filename - Uses 8.3 name format
-			Serial.println("Enter filename");
-			
-			Serial.printf("Serial bytes available: %d\n", Serial.available());
-			
+			/*
+			Serial.println("Enter filename: ");
 			while (Serial.available() < 4) { }
 			
 			for (int i = 0; i < Serial.available(); i++)
 				filename[i] = Serial.read();
-		
+			
+			strncat(filename, ".dat", sizeof(filename));
+			*/
+					
 			break;
 		
 		default:
 			Serial.println("NO PLATFORM SPECIFIED");
 			return;
 	}
+	
+	//Set log-filename - Uses 8.3 name format
+	Serial.println("\nEnter filename");
+	
+	while (Serial.available() < 8) { }
+	
+	for (int i = 0; i < 8; i++)
+		filename[i] = Serial.read();
+	
+	//strncat(filename, ".dat", sizeof(filename));
 	
     Serial.print("Logging. Filename=");
     Serial.println(filename);
@@ -1305,6 +1332,21 @@ void MagLib::SD_upload()
 
 	file.close();
 	digitalWrite(_ledPin, LOW); //Set StatusLED ON during write
+}
+
+void MagLib::menu_help()
+{
+	Serial.println("\n*****************************************");
+	Serial.println("     COMMS MENU INTERFACE FUNCTIONS     ");
+	Serial.println("*****************************************");
+	
+	Serial.println("\n\tI --> Initialise System.");
+	Serial.println("\n\tF --> Show SD Card Files.");
+	Serial.println("\n\tT --> Test SD Data Logging.");
+	Serial.println("\n\tC --> Check SD Card Status.");
+	Serial.println("\n\tL --> Log Data to SD Card.");
+	Serial.println("\n\tS --> Stream Data Over Serial.");
+	Serial.println("\n\tG --> Upload File [requires filename].\n\n");
 }
 
 void MagLib::printRawData(char *buffer, int format, int size)

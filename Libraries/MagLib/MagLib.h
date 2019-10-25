@@ -78,12 +78,16 @@ public:
 	/**	Default deconstructor
 	 */
 	~MagLib();
-
-/* 	/**	Initalise system to use with client application.
-	 *	@param DEVICE device to interface with
-	 *	@param buffer array of chars to return data from sensors
+	
+	/**	Test a specific node on any sensor or array
+	 *	Setup device for use with client application.
+	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
+	 *	or SoftwareSerial, i.e. HM10)
+	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
+	 *	@param ledPin Teensy onboard LED pin.
+	 *	@param baud Baud rate for serial communication.
 	 */
-	//void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud); */
+	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool verbose);
 
 	/** Initiase a specific I2C communication channel
 	 *  @param i2cLine I2C Channel to be initialised
@@ -138,16 +142,6 @@ public:
 							uint8_t nI2C,
 							uint8_t nAddress);
 
-	/**	Test a specific node on any sensor or array
-	 *	Setup device for use with client application.
-	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
-	 *	or SoftwareSerial, i.e. HM10)
-	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
-	 *	@param ledPin Teensy onboard LED pin.
-	 *	@param baud Baud rate for serial communication.
-	 */
-	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud);
-
 	/**	Initalise Bluetooth Low Energy device
 	 *	@return bool true if initialisation successful.
 	 */
@@ -200,6 +194,7 @@ public:
 	/**	Initialise SD Card to record data from sensors
 	*/
 	void initSDCard();
+
 
 	void SDCardStatus();
 
@@ -274,7 +269,10 @@ private:
 	 *	@return number of files.
 	 */
 	int getFiles(File dir, int numTabs);
-
+	
+	/** List all menu functions over Serial port.
+	 */
+	void menu_help();
 
 	// Custom GATT Profile for BLE Data Streaming
 	const char* magServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
@@ -287,7 +285,7 @@ private:
 	char mag_buffer[];
 
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
-	char packet_header[5]; // Used to denote start of binary data packet
+	char packet_header[5];  /** Used to denote start of binary data packet */
 
 	//An array of objects that contain the correct addressing for each node
 	MLX90393 nodeAddrObj[NADDR];
@@ -316,6 +314,8 @@ private:
 	int serial_baud;
 
 	int _ledPin;
+	
+	bool verbosefb;
 
 	unsigned long t_old = 0;
 
@@ -323,7 +323,7 @@ private:
 	char SDbuf[BUF_SIZE];
 
 	// Data file name
-	char filename[64] = "0000.dat";
+	char filename[64] = "N128_XYZ.dat";
 
 	// Initiate file system
 	SdFatSdioEX sd;
