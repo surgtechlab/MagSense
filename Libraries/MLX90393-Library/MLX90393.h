@@ -137,7 +137,7 @@ private:
 	int _I2CAddress;
 	int backup_address;
 
-	bool verbosefb;
+	bool verbosefb = true;
 
 	uint8_t _error;
 

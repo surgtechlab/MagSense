@@ -37,6 +37,7 @@ void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud,
 	_DEVICE = DEVICE;
 	_ledPin = ledPin;
 	serial_baud = baud;
+	
 	verbosefb = verbose;
 
 	pinMode(_ledPin, OUTPUT);
@@ -56,8 +57,8 @@ void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud,
 
 	//Begin the SdFAT file process
 	if (!sd.begin()) {
-		sd.initErrorHalt();
-		if (verbosefb) Serial.println("ERROR: SD Card Initialisation");
+	  sd.initErrorHalt();
+	  Serial.println("ERROR: SD Card Initialisation");
 	}
 	else {
 	  if (verbosefb) Serial.println("SD Card Initialised");
@@ -71,10 +72,10 @@ void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud,
 			break;
 		case RN4781:
 			if (initBLE()) {
-				Serial.printf("RN4781 Initialised as: %s\n", rn487xBle.getDeviceName());
+				if (verbosefb) Serial.printf("RN4781 Initialised as: %s\n", rn487xBle.getDeviceName());
 			}
 			else {
-				Serial.println("ERROR: RN4781 Initialisation failed.");
+				if (verbosefb) Serial.println("ERROR: RN4781 Initialisation failed.");
 			}
 			break;
 		case USB_COMMS:
@@ -100,7 +101,7 @@ void MagLib::initI2C(int i2cID)
 	thisWire->setDefaultTimeout(200000);
 
 	thisWire->setOpMode(I2C_OP_MODE_ISR);
-	thisWire->setRate(I2C_RATE_800);
+	thisWire->setRate(I2C_RATE_400);
 }
 
 bool MagLib::initBLE()
@@ -115,7 +116,7 @@ bool MagLib::initBLE()
   	rn487xBle.initBleStream(&ble);
 
 	if (!rn487xBle.swInit()) {
-		Serial.println("Init. procedure failed!");
+		if (verbosefb) Serial.println("Init. procedure failed!");
 		return false;
 	}
 
@@ -157,15 +158,15 @@ bool MagLib::initBLE()
 	return true;
 }
 
-void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
+void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *buffer)
 {
 	if (!Serial) Serial.begin(BAUD);
 
-	if (verbosefb) {
-		Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
-		Serial.println("\nInitialising Mux...");
-	}
-	
+	if (verbosefb) Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
+	//while (!Serial) { SysCall::yield(); }
+
+	if (verbosefb) Serial.println("\nInitialising Mux...");
+
 	// Initialise mux Pins
 	pinMode(_mux[0], OUTPUT);
 	pinMode(_mux[1], OUTPUT);
@@ -190,7 +191,7 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 	uint8_t nMUX;
 	char zyxt = 0xE;
 	uint8_t GAIN_SEL = 0x00;  //
-	uint8_t RES_XYZ = 0x00;  //
+	uint8_t RES_XYZ = 0x01;  //
 	uint8_t DIG_FILT = 0x1;
 	uint8_t OSR = 0x1;
 
@@ -265,7 +266,7 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 	for (int i = 0; i < nI2C; i++) initI2C(i);
 	if (verbosefb) Serial.println("Initialised I2C Bus");
 
-	initSensingNodes(NodeAddresses, receiveBuffer, nMUX, nI2C, nAddress, zyxt, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
+	initSensingNodes(NodeAddresses, buffer, nMUX, nI2C, nAddress, zyxt, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 
 	if (verbosefb) {
 		Serial.printf("\n*** Initialisation complete | ");
@@ -274,7 +275,7 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *receiveBuffer)
 }
 
 void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
-								char *receiveBuffer,
+								char *buffer,
 								uint8_t nMUX,
 								uint8_t nI2C,
 								uint8_t nAddress,
@@ -294,19 +295,22 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 		//LOOP through each I2C line
 		for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++)
 		{
-			//Serial.printf("I2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
+			if (verbosefb) Serial.printf("I2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
+				if (verbosefb) Serial.printf("Init node: %d\n", (nodeId + i2cID*8 + muxId*32));
 				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId, verbosefb);
 				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
 			} //end address loop
 		}//end i2c loop
 	}//end MUX loop
+	
+	Serial.println();
 }
 
-void MagLib::readSensingNodesFor(unsigned DEVICE, char *receiveBuffer)
+void MagLib::readSensingNodesFor(unsigned DEVICE, char *buffer)
 {
 	uint8_t nMUX;
 	uint8_t nI2C;
@@ -361,7 +365,7 @@ void MagLib::readSensingNodesFor(unsigned DEVICE, char *receiveBuffer)
 			break;
 	}
 
-	readSensingNodes(receiveBuffer, zyxt, nMUX, nI2C, nAddress);
+	readSensingNodes(buffer, zyxt, nMUX, nI2C, nAddress);
 }
 
 void MagLib::readSensingNodes(	char *buffer,
@@ -379,76 +383,70 @@ void MagLib::readSensingNodes(	char *buffer,
 	
 	uint8_t errors = 0;
 	uint8_t error_nodes[FOOTPLATE];
+	
+	bool SYNCHRONOUS = true;
 
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
 	for(uint8_t muxId =0; muxId < nMUX; muxId++)
 	{
 		//Set the mux...
 		setMux(muxId);
+		//Serial.printf("Switching to mux: %d\n", muxId);
 
 		//LOOP through addresses
 		for (uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 		{
 			start_t = micros();
-			//REQUEST LOOP - i2c lines
-			for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
-				
-				start_t = micros();
-				
-				//Now request for each sweep on that device
-				nodeAddrObj[nodeId].RequestMeasurement(receiveBuffer, zyxt, i2cID);
-				
-				/* // Test timings
-				request_t = micros() - start_t;
-				if (request_t > 10)
-					debug(receiveBuffer, muxId, i2cID, nodeId); */
-			}
 			
-			// LOOK AT SYNCHRONOUS REQUESTS !!!
+			switch (SYNCHRONOUS) {
 			
-			//WAIT LOOP - IS DATA READY
-			for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
-				nodeAddrObj[nodeId].AsyncRxFill(receiveBuffer, zyxt, i2cID);
-			}
-			//READ LOOP
-			for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
-				
-				unsigned long start = micros();
-				
-				//Serial.println("1");
-				//While there's no bytes available to read, do nothing...
-				while(!nodeAddrObj[nodeId].measureReady(i2cID));
-				//Serial.println("2");
-				//Serial.println("*** taking measurement...");
-				//Data ready - so read
-				nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
-
- 				// Check error bit
-				/* if (receiveBuffer[0] & 0x10) {
-					errors++;
-					error_nodes[errors] = node;
-				} */
-
-				//Work out the address
-				uint16_t packetOffset = (muxId*96)+(i2cID*24)+(nodeId*6)+4;
-				// Bytes 0-5 (+offset) are receiveBuffer 3-8
-				for (int i = 0; i < NODE_N_BYTE; i++) {
-					buffer[i+packetOffset] = receiveBuffer[i+3];
+			case false:
+				//REQUEST LOOP - i2c lines
+				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
+					//Now request for each sweep on that device
+					nodeAddrObj[nodeId].RequestMeasurement(receiveBuffer, zyxt, i2cID);
 				}
 				
-				unsigned long finish = micros() - start;
+				//WAIT LOOP - IS DATA READY
+				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {;
+					nodeAddrObj[nodeId].AsyncRxFill(receiveBuffer, zyxt, i2cID);
+				}
 				
-				// If greater than 10ms (100Hz) print debug statement
-				if (finish > 10000)
-					debug(receiveBuffer, muxId, i2cID, nodeId);
-			}
+				//READ LOOP
+				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
+
+					//While there's no bytes available to read, do nothing...
+					while(!nodeAddrObj[nodeId].measureReady(i2cID));
+					
+					//Data ready - so read
+					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
+
+					//Work out the address
+					uint16_t packetOffset = (muxId*96)+(i2cID*24)+(nodeId*6)+4;
+					// Bytes 0-5 (+offset) are receiveBuffer 3-8
+					for (int i = 0; i < NODE_N_BYTE; i++) {
+						buffer[i+packetOffset] = receiveBuffer[i+3];
+					}	
+				}
+				break;
+			
+			case true:
+				// Synchronous Measurement Loop
+				for (int i2cID = 0; i2cID < nI2C; i2cID++) {
+					// Get measurement from sensor
+					nodeAddrObj[nodeId].GetMeasurement(receiveBuffer, 0xE, i2cID);
+					
+					//Work out the address
+					uint16_t packetOffset = (muxId*96)+(i2cID*24)+(nodeId*6)+4;
+					// Bytes 0-5 (+offset) are receiveBuffer 3-8
+					for (int i = 0; i < NODE_N_BYTE; i++) {
+						buffer[i+packetOffset] = receiveBuffer[i+3];
+					}	
+				}
+				break;
+			}			
 		}
 	} //End for
-
-	// Report back errors
- 	/* Serial.printf("*** Completed with %d errors on chips: ", errors);
-	for (int i = 0; i < errors; i++) Serial.printf("%d ", error_nodes[i]);
-	Serial.println(); */
  
 	buffer[0] = (time) & 255;
 	buffer[1] = ((time)>>8) & 255;
@@ -478,7 +476,7 @@ void MagLib::testNode(	char *receiveBuffer,
 
 	Serial.printf("Node %d: ", node);
 	
-	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID, false);
+	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID, verbosefb);
 	nodeAddrObj[address].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 	nodeAddrObj[address].startBurstMode(receiveBuffer, zyxt, i2cID);
 	delay(500);
@@ -785,6 +783,7 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 			if (Serial.available() > 0)
 			{
 				int commsByte = Serial.read();
+				
 				if (verbosefb) {
 					Serial.print("\nCommand Recieved: ");
 					Serial.print(commsByte);
@@ -800,39 +799,39 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 						break;
 					case 'X':
 						comms_EstablishContact();
-						Serial.print("^");
+						Serial.println("^");
 						break;
 					case 'I':
 						System_Initialise(DEVICE, buffer);
-						Serial.print("\n^");	// End of text stream
+						Serial.println("^");	// End of text stream
 						break;
 					case 'F':
 						files = getFiles(sd.open("/"), 0);
-						Serial.printf("Discovered %d files\n", files);
-						Serial.print("^");
+						if (verbosefb) Serial.printf("Discovered %d files\n", files);
+						Serial.println("^");
 						break;
 					case 'T':
 						sd_card = test_SD_datalog();
 						if (sd_card) {
+							if (verbosefb) Serial.println("Tests successful.");
 							Serial.print("^");
-							Serial.println("Tests successful.");
 						} else Serial.print("e");
 						break;
 					case 'C':
 						comms_SD_Status();
-						Serial.print("^");
+						Serial.println("^");
 						break;
 					case 'S':
 						System_Stream(DEVICE, buffer);
-						Serial.print("^");
+						Serial.println("^");
 						break;
 					case 'L':
 						SD_datalog();
-						Serial.print("^");
+						Serial.println("^");
 						break;
 					case 'G':	// get datafile
 						SD_upload();
-						Serial.print("^");
+						Serial.println("^");
 						break;
 					case '?':
 						menu_help();
@@ -871,40 +870,21 @@ void MagLib::System_Stream(unsigned DEVICE, char *buffer)
 	char writeBuffer[12];
 	char counter = 0;
 	int size;
-	
-	switch (PLATFORM) {
-		
-		case RN4781:
-		
-			ble.flush();
 
-			do {
-				//TAKE READING FROM MAGBOARD
-				readSensingNodesFor(DEVICE, buffer);
-				size = ble.write(buffer, DEVICE);
-				// Wait for packet acknowledgement
-				while (ble.available() < 1) { }
-				commsByte = ble.read();
-			} while (commsByte == 83);
-					
-			break;
-		
-		case USB_COMMS:
-		
-			while (commsByte != '^') {
-				//TAKE READING FROM MAGBOARD
-				readSensingNodesFor(DEVICE, buffer);
-				size = Serial.write(buffer, DEVICE);
-				if (Serial.available()) commsByte = Serial.read();
-			}
-		
-			break;
-			
-		default:
-			Serial.println("No streaming platform selected");
-			break;
-		
-	}
+	do {
+		// TAKE READING FROM MAGBOARD
+		readSensingNodesFor(DEVICE, SDbuf);
+		// BUFFER PADDING
+		for (int i = DEVICE; i < BUF_SIZE; i++) SDbuf[i] = 0xFF;
+
+		size = Serial.write(SDbuf, DEVICE);
+
+		// Wait for packet acknowledgement
+		while (Serial.available() < 1) { }
+
+		commsByte = Serial.read();
+
+	} while (commsByte == 83);
 
 	if (verbosefb) Serial.println("\nStream stopped.");
 }
@@ -1087,7 +1067,7 @@ void MagLib::comms_SD_Status()
 
 	sd.ls(LS_R | LS_DATE | LS_SIZE); 	//SD file listing to Serial
 }
- 
+
 void MagLib::SD_datalog()
 {
 	char input_byte;
@@ -1109,7 +1089,11 @@ void MagLib::SD_datalog()
 	
 	bool led = false;
 
-	//**********************************************	
+	//**********************************************
+	Serial.println("Getting filename...");
+	
+	Serial.printf("Platform: %d\n", PLATFORM);
+	
 	switch (PLATFORM) {
 		
 		case RN4781:
@@ -1150,34 +1134,23 @@ void MagLib::SD_datalog()
 		case HM10:
 			break;
 			
-		case 3:
+		case USB_COMMS:
 			//Set log-filename - Uses 8.3 name format
-			/*
-			Serial.println("Enter filename: ");
+			Serial.println("Enter filename");
+			
+			Serial.printf("Serial bytes available: %d\n", Serial.available());
+			
 			while (Serial.available() < 4) { }
 			
 			for (int i = 0; i < Serial.available(); i++)
 				filename[i] = Serial.read();
-			
-			strncat(filename, ".dat", sizeof(filename));
-			*/
-					
+		
 			break;
 		
 		default:
 			Serial.println("NO PLATFORM SPECIFIED");
 			return;
 	}
-	
-	//Set log-filename - Uses 8.3 name format
-	Serial.println("\nEnter filename");
-	
-	while (Serial.available() < 8) { }
-	
-	for (int i = 0; i < 8; i++)
-		filename[i] = Serial.read();
-	
-	//strncat(filename, ".dat", sizeof(filename));
 	
     Serial.print("Logging. Filename=");
     Serial.println(filename);

@@ -1,12 +1,15 @@
 /*Copyright 2018 University of Leeds, Pete Culmer, Max Houghton, Chris Adams
+
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
 the Software without restriction, including without limitation the rights to
 use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
 the Software, and to permit persons to whom the Software is furnished to do so,
 subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,6 +35,7 @@ void MLX90393::init(char *receiveBuffer, int address, int i2cLine, int muxId, bo
 {
 	_I2CAddress = address;
 	backup_address = address;
+	
 	verbosefb = verbose;
 	
 	uint8_t i_status = 0;
@@ -108,13 +112,20 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 		Serial.print(lower_reg2, HEX);
 		Serial.println();
 	}
-	
-	// Create pointers to desired I2C line object
+
+	// Create pointers to desired I2C line object, and data to send/receive
 	i2c_t3* thisWire = WhichWire(i2cLine);
+
 
 	/*****************************************
 								  Reg0: SELECT GAIN
 	******************************************/
+	// uint8_t gainData[4] = {0x60, upper_reg0, lower_reg0, 0x00};
+	// requestData = i2cCommsWrapper(thisWire, gainData, 1);
+	// Serial.print("R0_status=0x");
+	// Serial.print(requestData[1], HEX);
+	// receiveBuffer[0] = requestData[1];
+	// _error = requestData[0];
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(upper_reg0);
@@ -125,7 +136,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	if (thisWire->available() == 1) // Read status byte
 	{
 		uint8_t ca = thisWire->read();
-		if (verbosefb) {
+		if (verbosefb)  {
 			Serial.print("R0_status=0x");
 			Serial.print(ca, HEX);
 		}
@@ -153,7 +164,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	if (thisWire->available() == 1) // Read status byte
 	{
 		uint8_t ca = thisWire->read();
-		if (verbosefb) {
+		if (verbosefb)  {
 			Serial.print("R1_status=0x");
 			Serial.print(ca, HEX);
 		}
@@ -181,7 +192,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	if (thisWire->available() == 1) // Read status byte
 	{
 		uint8_t ca = thisWire->read();
-		if (verbosefb) {
+		if (verbosefb)  {
 			Serial.print("R2_status=0x");
 			Serial.print(ca, HEX);
 		}
@@ -209,7 +220,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	if (thisWire->available() == 1) // Read status byte
 	{
 		uint8_t ca = thisWire->read();
-		if (verbosefb) {
+		if (verbosefb)  {
 			Serial.print("R4_status=0x");
 			Serial.print(ca, HEX);
 		}
@@ -237,7 +248,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	if (thisWire->available() == 1) // Read status byte
 	{
 		uint8_t ca = thisWire->read();
-		if (verbosefb) {
+		if (verbosefb)  {
 			Serial.print("R5_status=0x");
 			Serial.print(ca, HEX);
 		}
@@ -268,8 +279,8 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	if (thisWire->available() == 1) // Read status byte
 	{
 		uint8_t ca = thisWire->read();
-		if (verbosefb) {
-			Serial.print("R0_status=0x");
+		if (verbosefb)  {
+			Serial.print("R5_status=0x");
 			Serial.print(ca, HEX);
 		}
 		receiveBuffer[0] = ca;
@@ -280,7 +291,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 {
 	uint8_t select = (0x10) | (zyxt);
-	
+
 	if (verbosefb) {
 		Serial.print("SB MLX:L");
 		Serial.print(i2cLine);
@@ -288,21 +299,34 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 		Serial.print(_I2CAddress, HEX);
 		Serial.print(" Stat:");
 	}
+
 	// Create pointer to desired I2C line object
 	i2c_t3* thisWire = WhichWire(i2cLine);
+
+	// uint8_t writeCommand[1] = {select};
+	//
+	// uint8_t* requestData = i2cCommsWrapper(thisWire, writeCommand, 1);
+	//
+	// // check for Error (4th bit of status byte)
+	// if (0x10 & requestData[0]) {
+	// 	Serial.printf("error\n");
+	// } else Serial.println(requestData[0], HEX);
+	//
+	// uint8_t readCommand[2] = {0x50, 0x08};
+	//
+	// requestData = i2cCommsWrapper(thisWire, readCommand, 3);
 
 	thisWire->beginTransmission(_I2CAddress);
 
 	thisWire->write(select);					// Write command for Burst Mode
 	thisWire->endTransmission();				// Stop I2C Transmission
 
-	delay(50);
+	//delay(50);
 
 	thisWire->requestFrom(_I2CAddress, 1);   // Request 1 byte of data
-	if (thisWire->available() == 1)			// status byte
+	if (thisWire->available() == 1)			 // status byte
 	{
 		uint8_t ca = thisWire->read();
-
 		Serial.print(ca, HEX);
 		Serial.print(" ");
 		receiveBuffer[0] = ca;
@@ -336,12 +360,19 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 		// Register Config  (8) 1011 0100 0001 1100      osr=00 dig_filt=111 resXYZ = 100000 osr2=10
 
 	} else _error = 0x4;
+	//Serial.println();
 }
 
 void MLX90393::resetDevice(char *receiveBuffer, uint8_t select, int i2cLine)
 {
+	/*
 	// Create pointer to desired I2C line object
 	i2c_t3* thisWire = WhichWire(i2cLine);
+
+	uint8_t resetData[7] = {0x80, 0xF0, 0x60, 0x00, 0x0C, 0x00, select};
+			 //	[exit, reset, write, set AH, set AL, select addr, axis]
+	uint8_t* requestData = i2cCommsWrapper(thisWire, resetData, 0);
+	*/
 }
 
 /*Return number of bytes available, if after a request for read,
@@ -366,6 +397,7 @@ uint8_t MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
 	/* Here's an email from Pete that explains what each byte means:
 	* Each read from a chip (with our current config) will return the following (each line = 1 *
 	* byte)
+
 	* [MLX Return data] (I may have ordered XYZ wrong, but you get the idea)
 	* Status
 	* 0
@@ -407,6 +439,7 @@ void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 	/*STAY CALM. It's not as bad as it looks.
 	Before, we looked at the i2cLine number and if it was 0, we did a bunch of
 	commands for the wire 0 bus, if it was 1, we copy-pasted the same but for Wire1 etc etc.
+
 	This made my fingers hurt. Instead, we have a new function, whichWire.
 	This returns a POINTER to the correct Wire object. So in other words, if it's zero,
 	it returns the address of Wire, for 1 it returns address of Wire1 etc...
@@ -429,8 +462,26 @@ void MLX90393::AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine){
 
 	// Create pointer to I2C line objects
 	i2c_t3* thisWire = WhichWire(i2cLine);
-
-	while(!(thisWire->done()));
+	//Serial.printf("\nAsync RX Fill for I2C line %d\n", i2cLine);
+	unsigned long start = micros();
+	unsigned long finish;
+	
+	//Serial.printf("Async Rx Fill for line %d ", i2cLine);
+	
+	//i2c_status _s;
+	
+	while(!(thisWire->done())) { 
+			
+		finish = micros() - start;
+		
+		if (finish > 250) {
+			if (verbosefb) Serial.printf("AsyncRXFill for i2c %d exceeded time limit: %d\n" , i2cLine, finish);
+			break;
+		}
+	}
+	
+	//finish = micros() - start;
+	//Serial.printf("completed in %d us\n",  finish);
 	thisWire->sendRequest(_I2CAddress, 7, I2C_STOP);		// Request 7 bytes of data
 	//Serial.println("Have requested!");
 }
@@ -441,12 +492,16 @@ void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 
 	// Create pointer to desired I2C line object
 	i2c_t3* thisWire = WhichWire(i2cLine);
+	
+	//Serial.printf("*** Read measurement command on L%d\n", i2cLine);
 
 	thisWire->beginTransmission(_I2CAddress);	// Start I2C Transmission
 	thisWire->write(select);						// Read measurement command (ZXYT = 1111)
 	thisWire->endTransmission();					// Stop I2C Transmission
 	thisWire->requestFrom(_I2CAddress, 7);		// Request 7 bytes of data
-	//delay(50);
+	
+	//Serial.printf("*** Read data on L%d\n", i2cLine);
+
 	if (thisWire->available() == 7)
 	{
 		receiveBuffer[0] = thisWire->read(); //Status byte
@@ -460,8 +515,7 @@ void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 		receiveBuffer[8] = thisWire->read(); //zMag lsb
 	}
 	else {
-		Serial.println("*** L0 No Wires available: Read measurements failed.");
-		resetDevice(receiveBuffer, select, i2cLine);
+		Serial.printf("*** L%d No Wires available: Read measurements failed.\n", i2cLine);
 	}
 }
 

@@ -78,16 +78,6 @@ public:
 	/**	Default deconstructor
 	 */
 	~MagLib();
-	
-	/**	Test a specific node on any sensor or array
-	 *	Setup device for use with client application.
-	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
-	 *	or SoftwareSerial, i.e. HM10)
-	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
-	 *	@param ledPin Teensy onboard LED pin.
-	 *	@param baud Baud rate for serial communication.
-	 */
-	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool verbose);
 
 	/** Initiase a specific I2C communication channel
 	 *  @param i2cLine I2C Channel to be initialised
@@ -142,6 +132,16 @@ public:
 							uint8_t nI2C,
 							uint8_t nAddress);
 
+	/**	Test a specific node on any sensor or array
+	 *	Setup device for use with client application.
+	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
+	 *	or SoftwareSerial, i.e. HM10)
+	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
+	 *	@param ledPin Teensy onboard LED pin.
+	 *	@param baud Baud rate for serial communication.
+	 */
+	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool verbose);
+
 	/**	Initalise Bluetooth Low Energy device
 	 *	@return bool true if initialisation successful.
 	 */
@@ -195,16 +195,13 @@ public:
 	*/
 	void initSDCard();
 
-
+	/** Print SD Card status and contained files to Serial.
+	 */
 	void SDCardStatus();
 
 	/**	Close SD Card and stop writing to file.
 	 */
 	void closeSDCard();
-
-	/** Print time taken to get 1000 readings - 4 Node
-	 */
-	void TimeMeasurement(float TimeTaken);
 
 	/** Print an error to the serial port function
 	 */
@@ -269,8 +266,8 @@ private:
 	 *	@return number of files.
 	 */
 	int getFiles(File dir, int numTabs);
-	
-	/** List all menu functions over Serial port.
+
+	/**	List all menu functions to serial port for basic user help.
 	 */
 	void menu_help();
 
@@ -279,13 +276,10 @@ private:
 	const char* magCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom characteristic GATT
 	const uint8_t magCharacteristicLen = 100;    // Data length (bytes)
 	const uint8_t magHandle = 0x75;
-
 	char *magPayload;
 
-	char mag_buffer[];
-
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
-	char packet_header[5];  /** Used to denote start of binary data packet */
+	char packet_header[5]; 	// Used to denote start of binary data packet
 
 	//An array of objects that contain the correct addressing for each node
 	MLX90393 nodeAddrObj[NADDR];
@@ -293,6 +287,7 @@ private:
 	// Pins specifying single multiplexerbus [S1 S0]
 	int _mux[2] = {10, 11};
 
+	// LED Indicator pin status 
 	bool status_led = false;
 
 	// Pins on Teensy board to be used for I2C communication.
@@ -314,16 +309,16 @@ private:
 	int serial_baud;
 
 	int _ledPin;
-	
-	bool verbosefb;
 
 	unsigned long t_old = 0;
+	
+	bool verbosefb;
 
 	// SD Card properties
 	char SDbuf[BUF_SIZE];
 
 	// Data file name
-	char filename[64] = "N128_XYZ.dat";
+	char filename[64] = "0000.dat";
 
 	// Initiate file system
 	SdFatSdioEX sd;
