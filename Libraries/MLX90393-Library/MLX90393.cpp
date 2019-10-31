@@ -330,11 +330,7 @@ uint8_t MLX90393::measureReady(uint8_t i2cLine)
 {
 	//Choose the right wire object depending on the
 	i2c_t3* thisWire = WhichWire(i2cLine);
-	/*This is still just a pointer, so when we run commands, we must
-	deference it using ->*/
 
-	//Serial.printf("Stuck on i2c line: %d\n", i2cLine);
-	//delay(10);
 	//Has it finished transmitting the previous asynchronous requests?
 	//And are there the correct number of bytes available?
 	return (thisWire->done());
@@ -374,32 +370,13 @@ uint8_t MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
 	
 	thisWire->flush();
 
-	//The buffer is one too big! Woops!
-	//receiveBuffer[8] = 0;
-
-	//Everything went fine :)
 	return 0;
 }
 
 void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 {
 	static const uint8_t select = (0x40)|(zyxt);
-
-	/*STAY CALM. It's not as bad as it looks.
-	Before, we looked at the i2cLine number and if it was 0, we did a bunch of
-	commands for the wire 0 bus, if it was 1, we copy-pasted the same but for Wire1 etc etc.
-
-	This made my fingers hurt. Instead, we have a new function, whichWire.
-	This returns a POINTER to the correct Wire object. So in other words, if it's zero,
-	it returns the address of Wire, for 1 it returns address of Wire1 etc...
-	All the -> does it derefernce that pointer, aka go to that address and
-	perform beginTransmsion on that object not the address.*/
 	
-	/*Serial.print("ADDRESS: 0x");
-	Serial.println(_I2CAddress, HEX);
-	
-	Serial.print("BACKUP ADDRESS: 0x");
-	Serial.println(backup_address, HEX);*/
 	if (_I2CAddress > 0x13) _I2CAddress = backup_address;
 
 	WhichWire(i2cLine)->beginTransmission(_I2CAddress);	// Start I2C Transmission
@@ -414,10 +391,6 @@ void MLX90393::AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine){
 	//Serial.printf("\nAsync RX Fill for I2C line %d\n", i2cLine);
 	unsigned long start = micros();
 	unsigned long finish;
-	
-	//Serial.printf("Async Rx Fill for line %d ", i2cLine);
-	
-	//i2c_status _s;
 	
 	while(!(thisWire->done())) { 
 			
@@ -465,7 +438,8 @@ void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 	}
 	else {
 		for (int i = 0; i < 9; i++) receiveBuffer[i] = 0x00;
-		//Serial.printf("*** L%d No Wires available: Read measurements failed.\n", i2cLine);
+		
+		if (verbosefb) Serial.printf("*** L%d No Wires available: Read measurements failed.\n", i2cLine);
 	}
 }
 
@@ -523,7 +497,5 @@ i2c_t3* MLX90393::WhichWire(uint8_t wireNo)
 //Return address packet, depending on device
 int MLX90393::getAddress()
 {
-	//if (_I2CAddress != backup_address) _I2CAddress = backup_address;
-	
 	return _I2CAddress;
 }

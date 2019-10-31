@@ -17,7 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "MLX90393.h"
 #include "SdFat.h"
 #include "sdios.h"
-#include "FreeStack.h"
+//#include "FreeStack.h"
 
 // ****** Sensor System Size Definitions ****** //
 #define NODE_SINGLE   	10	// 3axes * 2bytes per axis + 4 time bytes
@@ -44,6 +44,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define USB_COMMS 3
 
 #define ble Serial1
+
+// ****** I2C Timings Definitions ***** //
+#define SYNC	1
+#define ASYNC	2
 
 // Maximuim number of milliseconds to wait for USB serial to get ready on boot
 #define SERIAL_TIMEOUT_MS 5000
@@ -87,7 +91,12 @@ public:
 	 *	@param _read_sync Specify to make synchronous or asynchronous I2C calls.
 	 *	@param _verbosefb Set system feedback to serial port on or off.
 	 */
-	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool _read_sync, bool _verbosefb);
+	void setupForClient(int platform, 
+						int DEVICE, 
+						int ledPin, 
+						int baud, 
+						int _sync_read, 
+						bool _verbosefb);
 
 	/** Initiase a specific I2C communication channel
 	 *  @param i2cLine I2C Channel to be initialised
@@ -100,7 +109,7 @@ public:
 	 *	@param DEVICE Device containing
 	 *	@param buffer Array to return data received by MLXs
 	 */
-	void initSensingNodesFor(unsigned DEVICE, int BAUD, char *buffer);
+	void initSensingNodesFor(int DEVICE, int BAUD, char *buffer);
 
 	/**	Initalise sensor nodes before taking measurements
 	 *	@param NodeAddress array of 8-bit addresses for MLX90393 devices (ranging from 0x0C to 0x0F)
@@ -127,7 +136,7 @@ public:
 	 *	Set	address, mux and i2c lines accordingly.
 	 *	@param buffer array of chars to return data bytes from sensors
 	 */
-	void readSensingNodesFor(unsigned DEVICE, char *buffer);
+	void readSensingNodesFor(int DEVICE, char *buffer);
 
 	/**	Read a number of sensors on specified mux and I2C lines
 	 *	@param buffer array to return data received by MLX's
@@ -164,7 +173,11 @@ public:
 	 *	@param i2cID I2C address of the desired node.
 	 *	@param muxID Multiplexer channel of the desired node.
 	 */
-	void testNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
+	void testNode(	char *buffer, 
+					char zyxt, 
+					uint8_t address, 
+					uint8_t i2cID,
+					uint8_t muxID);
 	
 	/**	Read a specific node on the sensor platform.
 	 *	@param buffer array of chars to return data from sensors.
@@ -173,7 +186,11 @@ public:
 	 *	@param i2cID I2C address of the desired node.
 	 *	@param muxID Multiplexer channel of the desired node.
 	 */
-	void readNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
+	void readNode(	char *buffer, 
+					char zyxt, 
+					uint8_t address, 
+					uint8_t i2cID, 
+					uint8_t muxID);
 
 	/** ********** CLINENT FUNCTIONS ********** */
 
@@ -181,7 +198,7 @@ public:
 	 *	@param DEVICE Specific Mag device to interface client with.
 	 *	@param buffer Array of bytes containing data.
 	 */
-	void comms_MainMenu(unsigned DEVICE, char *buffer);
+	void comms_MainMenu(int DEVICE, char *buffer);
 
 	/** ********** GLOBAL FUNCTIONS ********** */
 
@@ -212,7 +229,7 @@ public:
 
 	/** Print an error to the serial port function
 	 */
-	void MagError(char *err);
+	void MagError(const char *err);
 
 private:
 
@@ -224,7 +241,7 @@ private:
 	 *	@param DEVICE device to interface with.
 	 *	@param buffer array of chars to return data from sensors.
 	 */
-	void System_Initialise(unsigned DEVICE, char *buffer);
+	void System_Initialise(int DEVICE, char *buffer);
 
 	/**	Perform a check on the communication systems.
 	 *	@details Calls the test_SD_datalog() and comms_SD_Status() functions.
@@ -235,7 +252,7 @@ private:
 	 *	@param DEVICE device to interface with.
 	 *	@param buffer array of chars to return data from sensors.
 	 */
-	void System_Stream(unsigned DEVICE, char *buffer);
+	void System_Stream(int DEVICE, char *buffer);
 
 	/** Test the SD logging feature
 	 *  @details Perform a finite number of sensor readings and write to file.
@@ -296,6 +313,11 @@ private:
 
 	// LED Indicator pin status 
 	bool status_led = false;
+	
+	// Timing variable
+	unsigned long t_old;
+	
+	int val;
 
 	// Pins on Teensy board to be used for I2C communication.
 	i2c_pins I2C_PINS[4] = {
@@ -314,11 +336,12 @@ private:
 	// System Parameters
 	int NMUX;
 	int PLATFORM;
-	int DEVICE = 0;
+	int DEVICE;
 	int BAUD;
 	int LED;
+	int mux_bytes;
+	int sync_read;
 	
-	bool sync_read = false;
 	bool verbosefb = false;
 
 	// SD Card properties

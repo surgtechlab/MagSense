@@ -31,14 +31,14 @@ MagLib::~MagLib()
 
 }
 
-void MagLib::setupForClient(int platform, int device, int led, int baud, bool _read_sync, bool _verbosefb)
+void MagLib::setupForClient(int platform, int device, int led, int baud, int _sync_read, bool _verbosefb)
 {
 	PLATFORM = platform;
 	DEVICE = device;
 	LED = led;
 	BAUD = baud;
 	
-	read_sync = _read_sync;
+	sync_read = _sync_read;
 	verbosefb = _verbosefb;
 
 	pinMode(LED, OUTPUT);
@@ -159,7 +159,7 @@ bool MagLib::initBLE()
 	return true;
 }
 
-void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *buffer)
+void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 {
 	if (!Serial) Serial.begin(BAUD);
 
@@ -262,6 +262,8 @@ void MagLib::initSensingNodesFor(unsigned DEVICE, int BAUD, char *buffer)
 	}
 	// Set the number of muxes
 	NMUX = nMUX;
+	
+	mux_bytes = 96 * (nAddress / 4);
 
 	// Init required i2c channels
 	for (int i = 0; i < nI2C; i++) initI2C(i);
@@ -286,7 +288,6 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 								uint8_t DIG_FILT,
 								uint8_t OSR)
 {
-	uint8_t node = 0;
 	//LOOP through the MUX states
 	for(uint8_t muxId=0; muxId < nMUX; muxId++)
 	{
@@ -311,7 +312,7 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 	Serial.println();
 }
 
-void MagLib::readSensingNodesFor(unsigned DEVICE, char *buffer)
+void MagLib::readSensingNodesFor(int DEVICE, char *buffer)
 {
 	uint8_t nMUX;
 	uint8_t nI2C;
@@ -379,38 +380,27 @@ void MagLib::readSensingNodes(	char *buffer,
 	
 	//Pack the current time into the receiveBuffer
 	unsigned long time = millis();
-	
-	unsigned long start_t, request_t, wait_t, read_t;
-	
-	uint8_t errors = 0;
-	uint8_t error_nodes[FOOTPLATE];
-	
-	bool SYNCHRONOUS = false;
 
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
 	for(uint8_t muxId =0; muxId < nMUX; muxId++)
 	{
 		//Set the mux...
 		setMux(muxId);
-		//Serial.printf("Switching to mux: %d\n", muxId);
 
 		//LOOP through addresses
 		for (uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 		{		
-			switch (SYNCHRONOUS) {
-			
-			case false:
+			switch (sync_read) {
+			case ASYNC:
 				//REQUEST LOOP - i2c lines
 				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
 					//Now request for each sweep on that device
 					nodeAddrObj[nodeId].RequestMeasurement(receiveBuffer, zyxt, i2cID);
 				}
-				
 				//WAIT LOOP - IS DATA READY
 				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {;
 					nodeAddrObj[nodeId].AsyncRxFill(receiveBuffer, zyxt, i2cID);
 				}
-				
 				//READ LOOP
 				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
 
@@ -421,7 +411,7 @@ void MagLib::readSensingNodes(	char *buffer,
 					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
 
 					//Work out the address
-					uint16_t packetOffset = (muxId*192)+(nodeId*24)+(i2cID*6)+4;
+					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*24)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
@@ -429,21 +419,23 @@ void MagLib::readSensingNodes(	char *buffer,
 				}
 				break;
 			
-			case true:
+			case SYNC:
 				// Synchronous Measurement Loop
 				for (int i2cID = 0; i2cID < nI2C; i2cID++) {
 					// Get measurement from sensor
 					nodeAddrObj[nodeId].GetMeasurement(receiveBuffer, 0xE, i2cID);
-					
 					//Work out the address
-					uint16_t packetOffset = (muxId*192)+(nodeId*24)+(i2cID*6)+4;
+					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*24)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
 					}	
 				}
 				break;
-			}			
+			default:
+				MagError("I2C Timings not specified.");
+				break;
+			}		
 		}
 	} //End for
  
@@ -598,7 +590,7 @@ void MagLib::readBrace(char *buffer)
 
 }
 
-void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
+void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 {
 	int files = 0;
 	bool sd_card;
@@ -615,79 +607,79 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 				if (rn487xBle.readLocalCharacteristic(magHandle))
 				{
 					char commsByte;
-					magPayload = rn487xBle.getLastResponse();
+					const char* payload = rn487xBle.getLastResponse();
 
-					if ((magPayload != "Err ") || (magPayload == NULL))
+					if (payload == NULL)
 					{
-						for (int i = 0; i < sizeof(magPayload); i++) Serial.print(magPayload[i]);
+						for (unsigned i = 0; i < sizeof(magPayload); i++) Serial.print(payload[i]);
 						Serial.println();
 
-						commsByte = magPayload[0];
+						commsByte = payload[0];
 
 						switch (commsByte) {
 							case '^':
-								magPayload[0] = "R";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] =  'R';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								Serial.println("Received ready command");
 								break;
 							case 'X':
 								comms_EstablishContact();
-								magPayload[0] = "X";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'X';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								break;
 							case 'I':
-								magPayload[0] = "i";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'i';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								Serial.println("Initialise System");
 								System_Initialise(DEVICE, buffer);
-								magPayload[0] = "I";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'I';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								break;
 							case 'F':
 								files = getFiles(sd.open("/"), 0);
 								Serial.printf("Discovered %d files\n", files);
-								magPayload[0] = "F";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'F';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								break;
 							case 'T':
-								magPayload[0] = "t";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 't';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								sd_card = test_SD_datalog();
 								if (sd_card) {
-									magPayload[0] = "T";
-									rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+									magPayload[0] = 'T';
+									rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 									Serial.println("Tests successful.");
 								}
 								else {
-									magPayload[0] = "X";
-									rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+									magPayload[0] = 'X';
+									rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								}
 								break;
 							case 'C':
 								Serial.println("check sd status");
 								comms_SD_Status();
-								magPayload[0] = "C";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'C';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								break;
 							case 'S':
 								//ble.print("s");
 								System_Stream(DEVICE, buffer);
-								magPayload[0] = "S";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'S';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								break;
 							case 'L':
-								magPayload[0] = "l";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'l';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								SD_datalog();
-								magPayload[0] = "L";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'L';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 								break;
 							case 'G':	// get datafile
-								magPayload[0] = "g";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'g';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 					            SD_upload();
-								magPayload[0] = "G";
-								rn487xBle.writeLocalCharacteristic(magPayload, magHandle);
+								magPayload[0] = 'G';
+								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
 					            break;
 							default:	 // Unknown command - respond accordingly. RTFM
 								// Serial.print(magPayload[0], HEX);
@@ -856,32 +848,35 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 	}
 }
 
-void MagLib::System_Initialise(unsigned DEVICE, char *receiveBuffer)
+void MagLib::System_Initialise(int DEVICE, char *receiveBuffer)
 {
 	initSensingNodesFor(DEVICE, BAUD, receiveBuffer);
 
 	if (verbosefb) Serial.println("\nSystem Active");
 }
 
-void MagLib::System_Stream(unsigned DEVICE, char *buffer)
+void MagLib::System_Stream(int DEVICE, char *buffer)
 {
-    int packet_size = DEVICE;
 	int commsByte = 0;
-	char stream_packet_header[5];
-	char writeBuffer[12];
-	char counter = 0;
-	int size;
+	unsigned long t_start;
 
 	do {
 		// TAKE READING FROM MAGBOARD
 		readSensingNodesFor(DEVICE, SDbuf);
 		// BUFFER PADDING
-		for (int i = DEVICE; i < BUF_SIZE; i++) SDbuf[i] = 0xEE;
+		for (unsigned i = DEVICE; i < BUF_SIZE; i++) SDbuf[i] = 0xEE;
 
-		size = Serial.write(SDbuf, 1024);
+		Serial.write(SDbuf, 1024);
 
+		t_start = millis();
 		// Wait for packet acknowledgement
-		while (Serial.available() < 1) { }
+		while (Serial.available() < 1) { 
+		
+			if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
+				if (verbosefb) Serial.println("*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
+				return;
+			}
+		}
 
 		commsByte = Serial.read();
 
@@ -917,9 +912,6 @@ void MagLib::comms_EstablishContact()
 
 bool MagLib::test_SD_datalog()
 {
-	Serial.println("testing sd datalog...");
-
-	char input_byte;
 	uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
 	uint32_t num_writes = 0;
 	uint32_t m = 0; //microsec clock value (to regulate loop)
@@ -937,41 +929,33 @@ bool MagLib::test_SD_datalog()
 	SDbuf[BUF_SIZE-1] = 'Z';
 
 	//**********************************************
-	//Set log-filename - Uses 8.3 name format
-    while (ble.available() < 4) {  }
+	int minute, hour, day, month;
 
 	// C# Code:
 	// byte[] filename = { month, day, hour, minute };
-	int month = ble.read();		// MONTH
-    int day = ble.read();		// DAY
-    int hour = ble.read();		// HOUR
-    int minute = ble.read();	// MINUTE
+	//Set log-filename - Uses 8.3 name format
+	while (ble.available() < 4 ) { }
 
+	month = ble.read();		// MONTH
+	day = ble.read();		// DAY
+	hour = ble.read();		// HOUR
+	minute = ble.read();	// MINUTE
+	
 	char buffer[64];
-	char *mon_fmt, *day_fmt, *hr_fmt, *min_fmt;
-
-	if (minute < 10) min_fmt = "0%d";
-	else min_fmt = "%d";
-	if (hour < 10) hr_fmt = "0%d";
-	else hr_fmt = "%d";
-	if (day < 10) day_fmt = "0%d";
-	else day_fmt = "%d";
-	if (month < 10) mon_fmt = "0%d";
-	else mon_fmt = "%d";
-
-	// Format to resemble "HourMinuteDayMonth.dat".
-	// Copy hour format to receiveBuffer first then add the rest behind it
-	strncpy(buffer, mon_fmt, sizeof(buffer));
-	strncat(buffer, day_fmt, sizeof(buffer));
-	strncat(buffer, hr_fmt, sizeof(buffer));
-	strncat(buffer, min_fmt, sizeof(buffer));
-	strncat(buffer, ".dat", sizeof(buffer));
-
+			
+	if (minute < 10) strncpy(buffer, "0%d", 64);
+	else strncpy(buffer, "0%d", 64);
+	if (hour < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	if (day < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	if (month < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	
 	sprintf(filename, buffer, month, day, hour, minute);
 
     Serial.print("Logging. Filename=");
     Serial.println(filename);
-
 
 	// Create file (truncate existing file)
 	if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
@@ -996,7 +980,7 @@ bool MagLib::test_SD_datalog()
 
 		write_size = file.write(SDbuf, BUF_SIZE);
 
-		for (int j = 0; j < max_writes; j+=max_writes/10) if (i == j)
+		for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
 			Serial.printf("%d%%\n", j/(max_writes/100));
 
 		if (write_size != BUF_SIZE) {
@@ -1071,8 +1055,7 @@ void MagLib::comms_SD_Status()
 
 void MagLib::SD_datalog()
 {
-	char input_byte;
-    uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
+	uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
     uint32_t num_writes = 0;
     uint32_t m = 0; //microsec clock value (to regulate loop)
     uint32_t m_last = 0;
@@ -1089,6 +1072,8 @@ void MagLib::SD_datalog()
     SDbuf[BUF_SIZE-1] = 'Z';
 	
 	bool led = false;
+	
+	int minute, hour, day, month;
 
 	//**********************************************
 	switch (PLATFORM) {
@@ -1098,32 +1083,22 @@ void MagLib::SD_datalog()
 			//Set log-filename - Uses 8.3 name format
 			while (ble.available() < 4 ) { }
 		
-			int month = ble.read();		// MONTH
-			int day = ble.read();		// DAY
-			int hour = ble.read();		// HOUR
-			int minute = ble.read();	// MINUTE
+			month = ble.read();		// MONTH
+			day = ble.read();		// DAY
+			hour = ble.read();		// HOUR
+			minute = ble.read();	// MINUTE
 			
 			char buffer[64];
+					
+			if (minute < 10) strncpy(buffer, "0%d", 64);
+			else strncpy(buffer, "0%d", 64);
+			if (hour < 10) strncat(buffer, "0%d", 64);
+			else strncat(buffer, "0%d", 64);
+			if (day < 10) strncat(buffer, "0%d", 64);
+			else strncat(buffer, "0%d", 64);
+			if (month < 10) strncat(buffer, "0%d", 64);
+			else strncat(buffer, "0%d", 64);
 			
-			char *mon_fmt, *day_fmt, *hr_fmt, *min_fmt;
-
-			if (minute < 10) min_fmt = "0%d";
-			else min_fmt = "%d";
-			if (hour < 10) hr_fmt = "0%d";
-			else hr_fmt = "%d";
-			if (day < 10) day_fmt = "0%d";
-			else day_fmt = "%d";
-			if (month < 10) mon_fmt = "0%d";
-			else mon_fmt = "%d";
-
-			// Format to resemble "HourMinuteDayMonth.dat".
-			// Copy hour format to receiveBuffer first then add the rest behind it
-			strncpy(buffer, mon_fmt, sizeof(buffer));
-			strncat(buffer, day_fmt, sizeof(buffer));
-			strncat(buffer, hr_fmt, sizeof(buffer));
-			strncat(buffer, min_fmt, sizeof(buffer));
-			strncat(buffer, ".dat", sizeof(buffer));
-
 			sprintf(filename, buffer, month, day, hour, minute);
 			
 			break;
@@ -1152,7 +1127,7 @@ void MagLib::SD_datalog()
 	
 	while (Serial.available() < 8) { }
 	
-	for (int i = 0; i < Serial.available(); i++)
+	for (int i = 0; i < 8; i++)
 		filename[i] = Serial.read();
 	
     Serial.print("Logging. Filename=");
@@ -1177,38 +1152,38 @@ void MagLib::SD_datalog()
 
 	for (uint32_t i = 0; i < max_writes; i++) {
 
-	m = micros();                 //read time
-	readSensingNodesFor(DEVICE, SDbuf);    //take reading
-	write_size = file.write(SDbuf, BUF_SIZE);
+		m = micros();                 //read time
+		readSensingNodesFor(DEVICE, SDbuf);    //take reading
+		write_size = file.write(SDbuf, BUF_SIZE);
 
-	// Print percentage of cycle
-	for (int j = 0; j < max_writes; j+=max_writes/10) if (i == j)
-		Serial.printf("%d%%\n", j/(max_writes/100));
+		// Print percentage of cycle
+		for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
+			Serial.printf("%d%%\n", j/(max_writes/100));
 
-	// Blink LED for every 1% of file written
-	for (int j = 0; j < max_writes; j+=max_writes/100) if (i == j) {
-		digitalWrite(13, led);
-		led = !led;
-	}
-	 
-	if (write_size != BUF_SIZE) {
-		sd.errorPrint("write failed");
-		file.close();
-		return;
-	}
+		// Blink LED for every 1% of file written
+		for (unsigned j = 0; j < max_writes; j+=max_writes/100) if (i == j) {
+			digitalWrite(13, led);
+			led = !led;
+		}
+		 
+		if (write_size != BUF_SIZE) {
+			sd.errorPrint("write failed");
+			file.close();
+			return;
+		}
 
-	m = micros() - m;
+		m = micros() - m;
 
-	//Regulate loop rate here*
-	do {
-		delayMicroseconds(100);
-		m =  micros();
-	} while ( (m - m_last) < loop_dt);
+		//Regulate loop rate here*
+		do {
+			delayMicroseconds(100);
+			m =  micros();
+		} while ( (m - m_last) < loop_dt);
 
-	m_last = m;
-	//************************
-	  
-	num_writes = i;
+		m_last = m;
+		//************************
+		  
+		num_writes = i;
 	} //End write loop *****************
 
 	digitalWrite(LED, LOW);
@@ -1238,43 +1213,33 @@ void MagLib::SD_upload()
 	float logfile_size;
 	uint32_t nr;
 
-	Serial.println("Getting filename...");
-
-	//**********************************************
-	//Set log-filename - Uses 8.3 name format
-    while (ble.available() < 4 ) { }
+	int minute, hour, day, month;
 
 	// C# Code:
 	// byte[] filename = { month, day, hour, minute };
-	int month = ble.read();		// MONTH
-    int day = ble.read();		// DAY
-    int hour = ble.read();		// HOUR
-    int minute = ble.read();	// MINUTE
+	//Set log-filename - Uses 8.3 name format
+	while (ble.available() < 4 ) { }
 
+	month = ble.read();		// MONTH
+	day = ble.read();		// DAY
+	hour = ble.read();		// HOUR
+	minute = ble.read();	// MINUTE
+	
 	char buffer[64];
-	char *mon_fmt, *day_fmt, *hr_fmt, *min_fmt;
-
-	if (minute < 10) min_fmt = "0%d";
-	else min_fmt = "%d";
-	if (hour < 10) hr_fmt = "0%d";
-	else hr_fmt = "%d";
-	if (day < 10) day_fmt = "0%d";
-	else day_fmt = "%d";
-	if (month < 10) mon_fmt = "0%d";
-	else mon_fmt = "%d";
-
-	// Format to resemble "HourMinuteDayMonth.dat".
-	// Copy hour format to receiveBuffer first then add the rest behind it
-	strncpy(buffer, mon_fmt, sizeof(buffer));
-	strncat(buffer, day_fmt, sizeof(buffer));
-	strncat(buffer, hr_fmt, sizeof(buffer));
-	strncat(buffer, min_fmt, sizeof(buffer));
-	strncat(buffer, ".dat", sizeof(buffer));
-
+			
+	if (minute < 10) strncpy(buffer, "0%d", 64);
+	else strncpy(buffer, "0%d", 64);
+	if (hour < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	if (day < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	if (month < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	
 	sprintf(filename, buffer, month, day, hour, minute);
 
-	Serial.print("Upload. Filename=");
-	Serial.println(filename);
+    Serial.print("Logging. Filename=");
+    Serial.println(filename);
 
   	// Create file (truncate existing file)
 	if (!file.open(filename, O_RDONLY)) {
@@ -1496,9 +1461,9 @@ int MagLib::getFiles(File dir, int numTabs)
 
 // This is a general error function that you can use however you want
 // It will print something to the serial monitor. It's not critical but it should be noted
-void MagLib::MagError(char *errString){
+void MagLib::MagError(const char *errString){
 	//How quickly do you want to flash the error?
-	static const unsigned int repRate = 500;
+	static const unsigned int repRate = 250;
 
 	//Do couple of repeats
 	while(1){
