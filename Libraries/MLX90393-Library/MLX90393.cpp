@@ -21,9 +21,8 @@ SOFTWARE.*/
 #include "MLX90393.h"
 
 MLX90393::MLX90393()
-	//: ble(SoftwareSerial(0, 1))
 {
-	//ble.begin(9600);
+
 }
 
 MLX90393::~MLX90393()
@@ -116,16 +115,9 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	// Create pointers to desired I2C line object, and data to send/receive
 	i2c_t3* thisWire = WhichWire(i2cLine);
 
-
 	/*****************************************
-								  Reg0: SELECT GAIN
+					Reg0: SELECT GAIN
 	******************************************/
-	// uint8_t gainData[4] = {0x60, upper_reg0, lower_reg0, 0x00};
-	// requestData = i2cCommsWrapper(thisWire, gainData, 1);
-	// Serial.print("R0_status=0x");
-	// Serial.print(requestData[1], HEX);
-	// receiveBuffer[0] = requestData[1];
-	// _error = requestData[0];
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(upper_reg0);
@@ -145,14 +137,8 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	else _error = 0x2;
 
 	/*****************************************
-								  Reg1: CONFIGURE BURST MODE
+					Reg1: CONFIGURE BURST MODE
 	******************************************/
-	// uint8_t configData[4] = {0x60, upper_reg1, lower_reg1, 0x04};
-	// requestData = i2cCommsWrapper(thisWire, configData, 1);
-	// Serial.print(" R1_status=0x");
-	// Serial.print(requestData[1], HEX);
-	// receiveBuffer[0] = requestData[1];
-	// _error = requestData[0];
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(upper_reg1); //
@@ -165,7 +151,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	{
 		uint8_t ca = thisWire->read();
 		if (verbosefb)  {
-			Serial.print("R1_status=0x");
+			Serial.print(" R1_status=0x");
 			Serial.print(ca, HEX);
 		}
 		receiveBuffer[0] = ca;
@@ -173,14 +159,8 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	else _error = 0x2;
 
 	/*****************************************
-								  Reg2: SELECT RESOLUTION
+					Reg2: SELECT RESOLUTION
 	******************************************/
-	// uint8_t resolutionData[4] = {0x60, upper_reg2, lower_reg2, 0x08};
-	// requestData = i2cCommsWrapper(thisWire, resolutionData, 1);
-	// Serial.print(" R2_status=0x");
-	// Serial.print(requestData[1], HEX);
-	// receiveBuffer[0] = requestData[1];
-	// _error = requestData[0];
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(upper_reg2); //
@@ -193,7 +173,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	{
 		uint8_t ca = thisWire->read();
 		if (verbosefb)  {
-			Serial.print("R2_status=0x");
+			Serial.print(" R2_status=0x");
 			Serial.print(ca, HEX);
 		}
 		receiveBuffer[0] = ca;
@@ -201,14 +181,8 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	else _error = 0x2;
 
 	/*****************************************
-								  Reg4: X offset
+					Reg4: X offset
 	******************************************/
-	// uint8_t xOffsetData[4] = {0x60, OFFSET_XY_u, OFFSET_XY_l, 0x10};
-	// requestData = i2cCommsWrapper(thisWire, xOffsetData, 1);;
-	// Serial.print(" R4_status=0x");
-	// Serial.print(requestData[1], HEX);
-	// receiveBuffer[0] = requestData[1];
-	// _error = requestData[0];
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(OFFSET_XY_u); //
@@ -221,7 +195,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	{
 		uint8_t ca = thisWire->read();
 		if (verbosefb)  {
-			Serial.print("R4_status=0x");
+			Serial.print(" R4_status=0x");
 			Serial.print(ca, HEX);
 		}
 		receiveBuffer[0] = ca;
@@ -229,14 +203,8 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	else _error = 0x2;
 
 	/*****************************************
-								  Reg5: Y offset
+					Reg5: Y offset
 	******************************************/
-	// uint8_t yOffsetData[4] = {0x60, OFFSET_XY_u, OFFSET_XY_l, 0x14};
-	// requestData = i2cCommsWrapper(thisWire, yOffsetData, 1);
-	// Serial.print(" R5_status=0x");
-	// Serial.print(requestData[1], HEX);
-	// receiveBuffer[0] = requestData[1];
-	// _error = requestData[0];
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(OFFSET_XY_u); //
@@ -249,7 +217,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	{
 		uint8_t ca = thisWire->read();
 		if (verbosefb)  {
-			Serial.print("R5_status=0x");
+			Serial.print(" R5_status=0x");
 			Serial.print(ca, HEX);
 		}
 		receiveBuffer[0] = ca;
@@ -257,17 +225,8 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	else _error = 0x2;
 
 	/*****************************************
-							Reg6: Z offset
+					Reg6: Z offset
 	******************************************/
-	// uint8_t zOffsetData[4] = {0x60, OFFSET_Z_u, OFFSET_Z_l, 0x18};
-	// requestData = i2cCommsWrapper(thisWire, zOffsetData, 1);
-	//
-	// Serial.print(" R6_status=0x");
-	// Serial.print(requestData[1], HEX);
-	// Serial.println();
-	// receiveBuffer[0] = requestData[1];
-	// _error = requestData[0];
-
 	thisWire->beginTransmission(_I2CAddress); // Start I2C Transmission
 	thisWire->write(0x60); // Write register command
 	thisWire->write(OFFSET_Z_u); //
@@ -280,7 +239,7 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	{
 		uint8_t ca = thisWire->read();
 		if (verbosefb)  {
-			Serial.print("R5_status=0x");
+			Serial.print(" R5_status=0x");
 			Serial.print(ca, HEX);
 		}
 		receiveBuffer[0] = ca;
@@ -293,7 +252,7 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 	uint8_t select = (0x10) | (zyxt);
 
 	if (verbosefb) {
-		Serial.print("SB MLX:L");
+		Serial.print("\nSB MLX:L");
 		Serial.print(i2cLine);
 		Serial.print(" A:0x");
 		Serial.print(_I2CAddress, HEX);
@@ -303,25 +262,10 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 	// Create pointer to desired I2C line object
 	i2c_t3* thisWire = WhichWire(i2cLine);
 
-	// uint8_t writeCommand[1] = {select};
-	//
-	// uint8_t* requestData = i2cCommsWrapper(thisWire, writeCommand, 1);
-	//
-	// // check for Error (4th bit of status byte)
-	// if (0x10 & requestData[0]) {
-	// 	Serial.printf("error\n");
-	// } else Serial.println(requestData[0], HEX);
-	//
-	// uint8_t readCommand[2] = {0x50, 0x08};
-	//
-	// requestData = i2cCommsWrapper(thisWire, readCommand, 3);
-
 	thisWire->beginTransmission(_I2CAddress);
 
 	thisWire->write(select);					// Write command for Burst Mode
 	thisWire->endTransmission();				// Stop I2C Transmission
-
-	//delay(50);
 
 	thisWire->requestFrom(_I2CAddress, 1);   // Request 1 byte of data
 	if (thisWire->available() == 1)			 // status byte
@@ -346,13 +290,15 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 		uint8_t ra = thisWire->read();
 		uint8_t rb = thisWire->read();
 
-		// Serial.print("Register Read Status: ");
-		// Serial.print(c, BIN);
-		// Serial.print("\t Reg-MSB: ");
-		// Serial.print(ra, BIN);
-		// Serial.print("\t Reg-LSB: ");
-		// Serial.print(rb, BIN);
-		// Serial.print("\n");
+		if (verbosefb) {
+			Serial.print("Register Read Status: ");
+			Serial.print(c, BIN);
+			Serial.print("\t Reg-MSB: ");
+			Serial.print(ra, BIN);
+			Serial.print("\t Reg-LSB: ");
+			Serial.print(rb, BIN);
+			Serial.print("\n");
+		}
 
 		// Register Config	(0) 1011 0100  0001 1100    hallconf = 1100 gainsel=001 zseries=0
 		// Register Config  (0) 0000 0000  0000 1100
@@ -360,19 +306,22 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 		// Register Config  (8) 1011 0100 0001 1100      osr=00 dig_filt=111 resXYZ = 100000 osr2=10
 
 	} else _error = 0x4;
-	//Serial.println();
+	
+	if (verbosefb) Serial.println();
 }
 
 void MLX90393::resetDevice(char *receiveBuffer, uint8_t select, int i2cLine)
 {
-	/*
+	
 	// Create pointer to desired I2C line object
 	i2c_t3* thisWire = WhichWire(i2cLine);
-
-	uint8_t resetData[7] = {0x80, 0xF0, 0x60, 0x00, 0x0C, 0x00, select};
-			 //	[exit, reset, write, set AH, set AL, select addr, axis]
-	uint8_t* requestData = i2cCommsWrapper(thisWire, resetData, 0);
-	*/
+	
+	uint8_t exit = 0x80;
+	uint8_t reset = 0xF0;
+	uint8_t write = 0x60;
+	uint8_t set_AH = 0x00;
+	uint8_t set_AL = 0x0C;
+	uint8_t addr = 0x00;
 }
 
 /*Return number of bytes available, if after a request for read,
@@ -515,62 +464,8 @@ void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 		receiveBuffer[8] = thisWire->read(); //zMag lsb
 	}
 	else {
-		Serial.printf("*** L%d No Wires available: Read measurements failed.\n", i2cLine);
-	}
-}
-
-/* Function to perform comms
-*/
-uint8_t* MLX90393::i2cCommsWrapper(i2c_t3* wire, uint8_t* data, int request)
-{
-	// Begin comms transmission to desired i2c channel
-	wire->beginTransmission(_I2CAddress);
-
-	// For every byte in data array, send data
-	for (size_t i = 0; i < sizeof(data); i++) {
-		wire->write(data[i]);
-	}
-	// End transmission and request for return bytes
-	wire->endTransmission();
-
-	//delay(50);
-
-	// Initialise return data as empty array
-	uint8_t *dataReceived;
-
-	if (request == 0) {
-		return dataReceived;
-	} else {
-		wire->requestFrom(_I2CAddress, request);
-		// fill request data with readings (byte 0 is error)
-		if (wire->available() == request) {
-			// No error
-			for (int i = 0; i < request; i++) {
-				dataReceived[i] = wire->read();
-				// delay(5);
-			}
-		} else {
-			Serial.printf("error\n");
-			// // If no return bytes, return error
-			//
-			// uint8_t requestType = (data[0]&0xF0) >> 8;
-			//
-			// switch (requestType) {
-			// 	case 0x6:						// WRITE ERROR
-			// 		dataReceived[0] = 0x2;
-			// 		break;
-			// 	case 0x1:						// BURST MODE ERROR
-			// 		dataReceived[0] = 0x3;
-			// 		break;
-			// 	case 0x5:						// READ Error
-			// 		dataReceived[0] = 0x4;
-			// 		break;
-			// 	default:
-			// 		dataReceived[0] = 0x0;
-			// }
-		}
-
-		return dataReceived;
+		for (int i = 0; i < 9; i++) receiveBuffer[i] = 0x00;
+		//Serial.printf("*** L%d No Wires available: Read measurements failed.\n", i2cLine);
 	}
 }
 

@@ -31,29 +31,30 @@ MagLib::~MagLib()
 
 }
 
-void MagLib::setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool verbose)
+void MagLib::setupForClient(int platform, int device, int led, int baud, bool _read_sync, bool _verbosefb)
 {
 	PLATFORM = platform;
-	_DEVICE = DEVICE;
-	_ledPin = ledPin;
-	serial_baud = baud;
+	DEVICE = device;
+	LED = led;
+	BAUD = baud;
 	
-	verbosefb = verbose;
+	read_sync = _read_sync;
+	verbosefb = _verbosefb;
 
-	pinMode(_ledPin, OUTPUT);
-    digitalWrite(_ledPin, LOW);
+	pinMode(LED, OUTPUT);
+    digitalWrite(LED, LOW);
 
 	pinMode(LED_GREEN, OUTPUT);	// Green LED
 	pinMode(LED_RED, OUTPUT);	// Red LED
 	pinMode(LED_BLUE, OUTPUT);	// Blue LED
 
 	//Initiate USB Serial
-	Serial.begin(serial_baud);
+	Serial.begin(BAUD);
 
 	//while (!Serial) { SysCall::yield(); }
-	digitalWrite(_ledPin, HIGH); //Signify when Comms active
+	digitalWrite(LED, HIGH); //Signify when Comms active
     delay(1000);
-    digitalWrite(_ledPin, LOW);
+    digitalWrite(LED, LOW);
 
 	//Begin the SdFAT file process
 	if (!sd.begin()) {
@@ -295,11 +296,11 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 		//LOOP through each I2C line
 		for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++)
 		{
-			if (verbosefb) Serial.printf("I2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
+			if (verbosefb) Serial.printf("\nI2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
-				if (verbosefb) Serial.printf("Init node: %d\n", (nodeId + i2cID*8 + muxId*32));
+				if (verbosefb) Serial.printf("\n\nInit node: %d\n", (nodeId + i2cID*8 + muxId*32));
 				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId, verbosefb);
 				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
@@ -384,7 +385,7 @@ void MagLib::readSensingNodes(	char *buffer,
 	uint8_t errors = 0;
 	uint8_t error_nodes[FOOTPLATE];
 	
-	bool SYNCHRONOUS = true;
+	bool SYNCHRONOUS = false;
 
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
 	for(uint8_t muxId =0; muxId < nMUX; muxId++)
@@ -395,9 +396,7 @@ void MagLib::readSensingNodes(	char *buffer,
 
 		//LOOP through addresses
 		for (uint8_t nodeId=0; nodeId < nAddress; nodeId++)
-		{
-			start_t = micros();
-			
+		{		
 			switch (SYNCHRONOUS) {
 			
 			case false:
@@ -422,7 +421,7 @@ void MagLib::readSensingNodes(	char *buffer,
 					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
 
 					//Work out the address
-					uint16_t packetOffset = (muxId*96)+(i2cID*24)+(nodeId*6)+4;
+					uint16_t packetOffset = (muxId*192)+(nodeId*24)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
@@ -437,7 +436,7 @@ void MagLib::readSensingNodes(	char *buffer,
 					nodeAddrObj[nodeId].GetMeasurement(receiveBuffer, 0xE, i2cID);
 					
 					//Work out the address
-					uint16_t packetOffset = (muxId*96)+(i2cID*24)+(nodeId*6)+4;
+					uint16_t packetOffset = (muxId*192)+(nodeId*24)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
@@ -774,7 +773,7 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 				Serial.print("\nBT Unavailable.");
 				delay(2000);
 				status_led = !status_led;
-				digitalWrite(_ledPin, status_led); //Toggle LED output
+				digitalWrite(LED, status_led); //Toggle LED output
 			}
 			break;
 		*/
@@ -802,6 +801,7 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 						Serial.println("^");
 						break;
 					case 'I':
+						Serial.print("i");
 						System_Initialise(DEVICE, buffer);
 						Serial.println("^");	// End of text stream
 						break;
@@ -822,6 +822,7 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 						Serial.println("^");
 						break;
 					case 'S':
+						Serial.print("s");
 						System_Stream(DEVICE, buffer);
 						Serial.println("^");
 						break;
@@ -841,9 +842,9 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 						break;
 				}
 			} else {
-				delay(2000);
+				delay(500);
 				status_led = !status_led;
-				digitalWrite(_ledPin, status_led); //Toggle LED output
+				digitalWrite(LED, status_led); //Toggle LED output
 			}
 			break;
 		
@@ -857,7 +858,7 @@ void MagLib::comms_MainMenu(unsigned DEVICE, char *buffer)
 
 void MagLib::System_Initialise(unsigned DEVICE, char *receiveBuffer)
 {
-	initSensingNodesFor(DEVICE, serial_baud, receiveBuffer);
+	initSensingNodesFor(DEVICE, BAUD, receiveBuffer);
 
 	if (verbosefb) Serial.println("\nSystem Active");
 }
@@ -875,9 +876,9 @@ void MagLib::System_Stream(unsigned DEVICE, char *buffer)
 		// TAKE READING FROM MAGBOARD
 		readSensingNodesFor(DEVICE, SDbuf);
 		// BUFFER PADDING
-		for (int i = DEVICE; i < BUF_SIZE; i++) SDbuf[i] = 0xFF;
+		for (int i = DEVICE; i < BUF_SIZE; i++) SDbuf[i] = 0xEE;
 
-		size = Serial.write(SDbuf, DEVICE);
+		size = Serial.write(SDbuf, 1024);
 
 		// Wait for packet acknowledgement
 		while (Serial.available() < 1) { }
@@ -981,7 +982,7 @@ bool MagLib::test_SD_datalog()
 		Serial.println("File open OK");
 	}
 
-	digitalWrite(_ledPin, HIGH); //Set StatusLED ON during write
+	digitalWrite(LED, HIGH); //Set StatusLED ON during write
 
 	//*** LOGGING LOOP ******************
 	log_start_time = millis();
@@ -989,7 +990,7 @@ bool MagLib::test_SD_datalog()
 	for (uint32_t i = 0; i < max_writes; i++) {
 		m = micros(); //read time
 
-		readSensingNodesFor(_DEVICE, SDbuf);
+		readSensingNodesFor(DEVICE, SDbuf);
 		// Serial.println("\n**************receiveBuffer:");
 		// Serial.write(SDbuf,BUF_SIZE);
 
@@ -1018,7 +1019,7 @@ bool MagLib::test_SD_datalog()
 		num_writes = i;
 	} //End write loop *****************
 
-	digitalWrite(_ledPin, LOW);
+	digitalWrite(LED, LOW);
 	file.sync();
 	log_elapsed_time = millis() - log_start_time;
 	file.close();
@@ -1090,10 +1091,6 @@ void MagLib::SD_datalog()
 	bool led = false;
 
 	//**********************************************
-	Serial.println("Getting filename...");
-	
-	Serial.printf("Platform: %d\n", PLATFORM);
-	
 	switch (PLATFORM) {
 		
 		case RN4781:
@@ -1138,9 +1135,7 @@ void MagLib::SD_datalog()
 			//Set log-filename - Uses 8.3 name format
 			Serial.println("Enter filename");
 			
-			Serial.printf("Serial bytes available: %d\n", Serial.available());
-			
-			while (Serial.available() < 4) { }
+			while (Serial.available() < 8) { }
 			
 			for (int i = 0; i < Serial.available(); i++)
 				filename[i] = Serial.read();
@@ -1151,6 +1146,14 @@ void MagLib::SD_datalog()
 			Serial.println("NO PLATFORM SPECIFIED");
 			return;
 	}
+	
+	//Set log-filename - Uses 8.3 name format
+	Serial.println("Enter filename");
+	
+	while (Serial.available() < 8) { }
+	
+	for (int i = 0; i < Serial.available(); i++)
+		filename[i] = Serial.read();
 	
     Serial.print("Logging. Filename=");
     Serial.println(filename);
@@ -1165,7 +1168,7 @@ void MagLib::SD_datalog()
   		Serial.println("File open OK");
     }
 
-    digitalWrite(_ledPin, HIGH); //Set StatusLED ON during write
+    digitalWrite(LED, HIGH); //Set StatusLED ON during write
 
     //*** LOGGING LOOP ******************
 	log_start_time = millis();
@@ -1175,7 +1178,7 @@ void MagLib::SD_datalog()
 	for (uint32_t i = 0; i < max_writes; i++) {
 
 	m = micros();                 //read time
-	readSensingNodesFor(_DEVICE, SDbuf);    //take reading
+	readSensingNodesFor(DEVICE, SDbuf);    //take reading
 	write_size = file.write(SDbuf, BUF_SIZE);
 
 	// Print percentage of cycle
@@ -1208,7 +1211,7 @@ void MagLib::SD_datalog()
 	num_writes = i;
 	} //End write loop *****************
 
-	digitalWrite(_ledPin, LOW);
+	digitalWrite(LED, LOW);
 	file.sync();
 	log_elapsed_time = millis() - log_start_time;
 	file.close();
@@ -1286,7 +1289,7 @@ void MagLib::SD_upload()
 	Serial.println(logfile_size);
 	ble.println(logfile_size);
 
-	digitalWrite(_ledPin, HIGH); //Set StatusLED ON during write
+	digitalWrite(LED, HIGH); //Set StatusLED ON during write
 
 	while ( (nr = file.read(SDbuf, BUF_SIZE)) > 0 ) {
 		if (nr < BUF_SIZE) {
@@ -1304,7 +1307,7 @@ void MagLib::SD_upload()
 	Serial.println("File upload finished.");
 
 	file.close();
-	digitalWrite(_ledPin, LOW); //Set StatusLED ON during write
+	digitalWrite(LED, LOW); //Set StatusLED ON during write
 }
 
 void MagLib::menu_help()

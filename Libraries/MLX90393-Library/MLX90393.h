@@ -28,10 +28,6 @@ OTHER DEALINGS IN THE SOFTWARE.*/
 #define NODE_N_BYTE 6 // Number of bytes per node
 #define RCVBUFSZ 9
 
-//#include <cstdint>
-
-// #include <DateTime.h>
-
 /**	@file MLX90393.h
  *	@brief MLX90393 Class used for comms with the MLX90393 device over the I2C bus on Arduino platform.
  *	@author Max Houghton
@@ -65,8 +61,10 @@ public:
 	 */
 	void startBurstMode(char *receiveBuffer, char zyxt, int i2cLine);
 
-	/*	Reset device on measurement failure.
+	/**	Reset device on measurement failure.
 	 *	@param receiveBuffer Returns a status byte.
+	 *	@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
+	 *	@param i2cLine I2C Communication channel to address chip on.
 	 */
 	void resetDevice(char *receiveBuffer, uint8_t select, int i2cLine);
 
@@ -77,9 +75,13 @@ public:
 	void ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
 
 	/** Pair of functions to perform async read **/
-/* 	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);*/
 
 	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+	
+	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
+	uint8_t takeMeasure(char *receiveBuffer, int i2cLine);
+	uint8_t measureReady(uint8_t i2cLine);
+	void AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine);
 
 
 /* ********** DATA DISPLAY FUNCTIONS ********** */
@@ -101,32 +103,22 @@ public:
 	*/
 	void printChartData(char *receiveBuffer);
 
-/* ********** COMMUNICATION FUNCTIONS ********** */
-
 	/** Start timer.
 	 */
-	void startTimer(void);
+	void startTimer();
 
 	/** Print time taken between readings.
 	*/
-	void printTimeElapsed(void);
+	void printTimeElapsed();
 
-/* *********** Asynchronous i2c functions *** */
-	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
-	uint8_t takeMeasure(char *receiveBuffer, int i2cLine);
-	uint8_t measureReady(uint8_t i2cLine);
-
-	int getAddress(void);
-
-	void AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine);
-
+	int getAddress();
+	
 private:
 
-	// Bluetooth device
-	//SoftwareSerial ble;
-
-	uint8_t* i2cCommsWrapper(i2c_t3* wire, uint8_t* data, int request);
-
+	/** Point to wire buses to simplify communication code.
+	 *	@param wireNo Desired I2C channel to communicate on.
+	 *	@return i2c_t3 Pointer to I2C channel (Wire) object.
+	 */
 	i2c_t3* WhichWire(uint8_t wireNo);
 
 	/** Print error description

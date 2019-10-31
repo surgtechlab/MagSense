@@ -38,7 +38,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #define NADDR			8
 
-// ****** BLE Definitions ****** //
+// ****** Platform Definitions ****** //
 #define HM10 	1
 #define RN4781 	2
 #define USB_COMMS 3
@@ -78,6 +78,16 @@ public:
 	/**	Default deconstructor
 	 */
 	~MagLib();
+	
+	/** Setup device for use with client application.
+	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781 or SoftwareSerial, i.e. HM10)
+	 *	@param DEVICE Specific Mag device to be used (e.g. FOOTPLATE, HAILO, etc)
+	 *	@param ledPin Teensy onboard LED pin.
+	 *	@param baud Baud rate for serial communication.
+	 *	@param _read_sync Specify to make synchronous or asynchronous I2C calls.
+	 *	@param _verbosefb Set system feedback to serial port on or off.
+	 */
+	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool _read_sync, bool _verbosefb);
 
 	/** Initiase a specific I2C communication channel
 	 *  @param i2cLine I2C Channel to be initialised
@@ -132,16 +142,6 @@ public:
 							uint8_t nI2C,
 							uint8_t nAddress);
 
-	/**	Test a specific node on any sensor or array
-	 *	Setup device for use with client application.
-	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781
-	 *	or SoftwareSerial, i.e. HM10)
-	 *	@param DEVICE Specific Mag device to be used (e.g. MAGBOARD, HAILO, etc)
-	 *	@param ledPin Teensy onboard LED pin.
-	 *	@param baud Baud rate for serial communication.
-	 */
-	void setupForClient(int platform, unsigned DEVICE, int ledPin, int baud, bool verbose);
-
 	/**	Initalise Bluetooth Low Energy device
 	 *	@return bool true if initialisation successful.
 	 */
@@ -157,15 +157,22 @@ public:
 	 */
 	void readBrace(char *buffer);
 
-	/**	Test a specific node on any sensor or array
-	 *	@param buffer array of chars to return data from sensors
-	 *	@param zyxt selected desired axes/temperature values to read
-	 *	@param address address of specific node to test
-	 *	@param i2cID I2C address of the desired node
-	 *	@param muxID Multiplexer channel of the desired node
+	/**	Test a specific node on any sensor or array.
+	 *	@param buffer array of chars to return data from sensors.
+	 *	@param zyxt selected desired axes/temperature values to read.
+	 *	@param address address of specific node to test.
+	 *	@param i2cID I2C address of the desired node.
+	 *	@param muxID Multiplexer channel of the desired node.
 	 */
 	void testNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
 	
+	/**	Read a specific node on the sensor platform.
+	 *	@param buffer array of chars to return data from sensors.
+	 *	@param zyxt selected desired axes/temperature values to read.
+	 *	@param address address of specific node to test.
+	 *	@param i2cID I2C address of the desired node.
+	 *	@param muxID Multiplexer channel of the desired node.
+	 */
 	void readNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, uint8_t muxID);
 
 	/** ********** CLINENT FUNCTIONS ********** */
@@ -298,21 +305,21 @@ private:
 		I2C_PINS_56_57
 	};
 
-	//Be able to index wire buses to make it easier
+	/** Point to wire buses to simplify communication code.
+	 *	@param wireNo Desired I2C channel to communicate on.
+	 *	@return i2c_t3 Pointer to I2C channel (Wire) object.
+	 */
 	i2c_t3* WhichWire(uint8_t wireNo);
 
+	// System Parameters
 	int NMUX;
-
 	int PLATFORM;
-
-	unsigned _DEVICE = 0;
-	int serial_baud;
-
-	int _ledPin;
-
-	unsigned long t_old = 0;
+	int DEVICE = 0;
+	int BAUD;
+	int LED;
 	
-	bool verbosefb;
+	bool sync_read = false;
+	bool verbosefb = false;
 
 	// SD Card properties
 	char SDbuf[BUF_SIZE];
