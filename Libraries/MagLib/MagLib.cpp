@@ -850,7 +850,14 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 
 void MagLib::System_Initialise(int DEVICE, char *receiveBuffer)
 {
+	// Make LED on whilst initialising.
+	digitalWrite(LED, HIGH);
+	
 	initSensingNodesFor(DEVICE, BAUD, receiveBuffer);
+
+	// Make LED low and two second delay to signify completion.
+	delay(2000);
+	digitalWrite(LED, LOW);
 
 	if (verbosefb) Serial.println("\nSystem Active");
 }
@@ -866,6 +873,7 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 		// BUFFER PADDING
 		for (unsigned i = DEVICE; i < BUF_SIZE; i++) SDbuf[i] = 0xEE;
 
+		// Write buffer to serial port.
 		Serial.write(SDbuf, 1024);
 
 		t_start = millis();
@@ -873,10 +881,13 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 		while (Serial.available() < 1) { 
 		
 			if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
-				if (verbosefb) Serial.println("*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
+				if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
 				return;
 			}
 		}
+		
+		digitalWrite(LED, status_led);
+		status_led = !status_led;
 
 		commsByte = Serial.read();
 
