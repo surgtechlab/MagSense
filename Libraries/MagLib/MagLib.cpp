@@ -51,7 +51,6 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 	//Initiate USB Serial
 	Serial.begin(BAUD);
 
-	//while (!Serial) { SysCall::yield(); }
 	digitalWrite(LED, HIGH); //Signify when Comms active
     delay(1000);
     digitalWrite(LED, LOW);
@@ -59,7 +58,7 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 	//Begin the SdFAT file process
 	if (!sd.begin()) {
 	  sd.initErrorHalt();
-	  Serial.println("ERROR: SD Card Initialisation");
+	  Serial.println("ERROR: SD Card Initialisation Failed.");
 	}
 	else {
 	  if (verbosefb) Serial.println("SD Card Initialised");
@@ -164,8 +163,9 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	if (!Serial) Serial.begin(BAUD);
 
 	if (verbosefb) Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
-
 	if (verbosefb) Serial.println("\nInitialising Mux...");
+	
+	if (!sync_read) sync_read = ASYNC;
 
 	// Initialise mux Pins
 	pinMode(_mux[0], OUTPUT);
@@ -194,6 +194,8 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	uint8_t RES_XYZ = 0x00;  //
 	uint8_t DIG_FILT = 0x1;
 	uint8_t OSR = 0x1;
+	
+	mux_bytes = 96;
 
 	switch (DEVICE) {
 		case NODE_SINGLE:
@@ -215,11 +217,13 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			nMUX = 1;
 			nI2C = 3;
 			nAddress = 3;
-			Serial.println("HAILO is Alive!"); //Signify system active and print version info
-			Serial.println(__FILE__);
-			Serial.println(__DATE__);
-			Serial.println(__TIME__);
-			Serial.println("****");
+			if (verbosefb) {
+				Serial.println("HAILO is Alive!"); //Signify system active and print version info
+				Serial.println(__FILE__);
+				Serial.println(__DATE__);
+				Serial.println(__TIME__);
+				Serial.println("****");
+			}
 			break;		
 		case NODE_16:
 			nMUX = 1;
@@ -242,10 +246,12 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 				Serial.println(__TIME__);
 				Serial.println("****");
 			}
+			break;
 		case NODE_128:
 			nMUX = 4;
 			nI2C = 4;
 			nAddress = 8;
+			mux_bytes = 192;
 			if (verbosefb) {
 				Serial.println("FootPlate is Alive!"); //Signify system active and print version info
 				Serial.println(__FILE__);
@@ -262,7 +268,6 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	}
 	// Set the number of muxes
 	NMUX = nMUX;
-	mux_bytes = 96 * (nAddress / 4);	// Used to specify offset for packets
 
 	// Init required i2c channels
 	for (int i = 0; i < nI2C; i++) initI2C(i);
@@ -296,11 +301,14 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 		//LOOP through each I2C line
 		for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++)
 		{
-			if (verbosefb) Serial.printf("\nI2C pins - SDA: PIN%d, SCL: PIN%d\n", WhichWire(i2cID)->getSDA(), WhichWire(i2cID)->getSCL());
+			if (verbosefb) Serial.printf("\nI2C pins - SDA: PIN%d, SCL: PIN%d\n", 
+											WhichWire(i2cID)->getSDA(), 
+											WhichWire(i2cID)->getSCL());
+											
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
-				if (verbosefb) Serial.printf("\n\nInit node: %d\n", (nodeId + i2cID*8 + muxId*32));
+				if (verbosefb) Serial.printf("\n\nInit node: %d\n", (nodeId + i2cID*4 + muxId*16));
 				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId, verbosefb);
 				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
@@ -920,116 +928,6 @@ void MagLib::comms_EstablishContact()
 	Serial.print(" ");
 }
 
-bool MagLib::test_SD_datalog()
-{
-	uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
-	uint32_t num_writes = 0;
-	uint32_t m = 0; //microsec clock value (to regulate loop)
-	uint32_t m_last = 0;
-	uint32_t log_start_time;
-	uint32_t log_elapsed_time;
-	int32_t write_size;
-
-	// Loop dT in micro sec (100Hz)
-	uint32_t loop_dt = 10000; //loop dT in micro secs (100Hz)
-
-	//Define packet end
-	SDbuf[BUF_SIZE-3] = 'X';
-	SDbuf[BUF_SIZE-2] = 'Y';
-	SDbuf[BUF_SIZE-1] = 'Z';
-
-	//**********************************************
-	int minute, hour, day, month;
-
-	// C# Code:
-	// byte[] filename = { month, day, hour, minute };
-	//Set log-filename - Uses 8.3 name format
-	while (ble.available() < 4 ) { }
-
-	month = ble.read();		// MONTH
-	day = ble.read();		// DAY
-	hour = ble.read();		// HOUR
-	minute = ble.read();	// MINUTE
-	
-	char buffer[64];
-			
-	if (minute < 10) strncpy(buffer, "0%d", 64);
-	else strncpy(buffer, "0%d", 64);
-	if (hour < 10) strncat(buffer, "0%d", 64);
-	else strncat(buffer, "0%d", 64);
-	if (day < 10) strncat(buffer, "0%d", 64);
-	else strncat(buffer, "0%d", 64);
-	if (month < 10) strncat(buffer, "0%d", 64);
-	else strncat(buffer, "0%d", 64);
-	
-	sprintf(filename, buffer, month, day, hour, minute);
-
-    Serial.print("Logging. Filename=");
-    Serial.println(filename);
-
-	// Create file (truncate existing file)
-	if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
-		Serial.println("ERROR: file open failed");
-		return false;
-	} else {
-		file.truncate(0); //file with 0 bytes and absolutely no contents in it
-		Serial.println("File open OK");
-	}
-
-	digitalWrite(LED, HIGH); //Set StatusLED ON during write
-
-	//*** LOGGING LOOP ******************
-	log_start_time = millis();
-
-	for (uint32_t i = 0; i < max_writes; i++) {
-		m = micros(); //read time
-
-		readSensingNodesFor(DEVICE, SDbuf);
-		// Serial.println("\n**************receiveBuffer:");
-		// Serial.write(SDbuf,BUF_SIZE);
-
-		write_size = file.write(SDbuf, BUF_SIZE);
-
-		for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
-			Serial.printf("%d%%\n", j/(max_writes/100));
-
-		if (write_size != BUF_SIZE) {
-			sd.errorPrint("write failed");
-			file.close();
-			return false;
-		}
-
-		m = micros() - m;
-
-		//Regulate loop rate here*
-		do {
-			delay(1);
-			m =  micros();
-		} while ( (m - m_last) < loop_dt);
-
-		m_last = m;
-		//************************
-
-		num_writes = i;
-	} //End write loop *****************
-
-	digitalWrite(LED, LOW);
-	file.sync();
-	log_elapsed_time = millis() - log_start_time;
-	file.close();
-
-	Serial.print("\nWrite Stopped at cycle ");
-	Serial.print(num_writes);
-	Serial.print(" of ");
-	Serial.println(max_writes);
-
-	//Print Performance Information to USB Serial
-	Serial.print("\nAverage Loop Time (ms): ");
-	Serial.println( log_elapsed_time/num_writes );
-
-	return true;
-}
-
 void MagLib::comms_SD_Status()
 {
 	//Print Card Information
@@ -1122,23 +1020,15 @@ void MagLib::SD_datalog()
 			
 			while (Serial.available() < 8) { }
 			
-			for (int i = 0; i < Serial.available(); i++)
+			for (int i = 0; i < 8; i++)
 				filename[i] = Serial.read();
 		
 			break;
 		
 		default:
-			Serial.println("NO PLATFORM SPECIFIED");
+			Serial.println("\n*** NO PLATFORM SPECIFIED");
 			return;
 	}
-	
-	//Set log-filename - Uses 8.3 name format
-	Serial.println("Enter filename");
-	
-	while (Serial.available() < 8) { }
-	
-	for (int i = 0; i < 8; i++)
-		filename[i] = Serial.read();
 	
     Serial.print("Logging. Filename=");
     Serial.println(filename);
@@ -1285,6 +1175,116 @@ void MagLib::SD_upload()
 	digitalWrite(LED, LOW); //Set StatusLED ON during write
 }
 
+bool MagLib::test_SD_datalog()
+{
+	uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
+	uint32_t num_writes = 0;
+	uint32_t m = 0; //microsec clock value (to regulate loop)
+	uint32_t m_last = 0;
+	uint32_t log_start_time;
+	uint32_t log_elapsed_time;
+	int32_t write_size;
+
+	// Loop dT in micro sec (100Hz)
+	uint32_t loop_dt = 10000; //loop dT in micro secs (100Hz)
+
+	//Define packet end
+	SDbuf[BUF_SIZE-3] = 'X';
+	SDbuf[BUF_SIZE-2] = 'Y';
+	SDbuf[BUF_SIZE-1] = 'Z';
+
+	//**********************************************
+	int minute, hour, day, month;
+
+	// C# Code:
+	// byte[] filename = { month, day, hour, minute };
+	//Set log-filename - Uses 8.3 name format
+	while (ble.available() < 4 ) { }
+
+	month = ble.read();		// MONTH
+	day = ble.read();		// DAY
+	hour = ble.read();		// HOUR
+	minute = ble.read();	// MINUTE
+	
+	char buffer[64];
+			
+	if (minute < 10) strncpy(buffer, "0%d", 64);
+	else strncpy(buffer, "0%d", 64);
+	if (hour < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	if (day < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	if (month < 10) strncat(buffer, "0%d", 64);
+	else strncat(buffer, "0%d", 64);
+	
+	sprintf(filename, buffer, month, day, hour, minute);
+
+    Serial.print("Logging. Filename=");
+    Serial.println(filename);
+
+	// Create file (truncate existing file)
+	if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
+		Serial.println("ERROR: file open failed");
+		return false;
+	} else {
+		file.truncate(0); //file with 0 bytes and absolutely no contents in it
+		Serial.println("File open OK");
+	}
+
+	digitalWrite(LED, HIGH); //Set StatusLED ON during write
+
+	//*** LOGGING LOOP ******************
+	log_start_time = millis();
+
+	for (uint32_t i = 0; i < max_writes; i++) {
+		m = micros(); //read time
+
+		readSensingNodesFor(DEVICE, SDbuf);
+		// Serial.println("\n**************receiveBuffer:");
+		// Serial.write(SDbuf,BUF_SIZE);
+
+		write_size = file.write(SDbuf, BUF_SIZE);
+
+		for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
+			Serial.printf("%d%%\n", j/(max_writes/100));
+
+		if (write_size != BUF_SIZE) {
+			sd.errorPrint("write failed");
+			file.close();
+			return false;
+		}
+
+		m = micros() - m;
+
+		//Regulate loop rate here*
+		do {
+			delay(1);
+			m =  micros();
+		} while ( (m - m_last) < loop_dt);
+
+		m_last = m;
+		//************************
+
+		num_writes = i;
+	} //End write loop *****************
+
+	digitalWrite(LED, LOW);
+	file.sync();
+	log_elapsed_time = millis() - log_start_time;
+	file.close();
+
+	Serial.print("\nWrite Stopped at cycle ");
+	Serial.print(num_writes);
+	Serial.print(" of ");
+	Serial.println(max_writes);
+
+	//Print Performance Information to USB Serial
+	Serial.print("\nAverage Loop Time (ms): ");
+	Serial.println( log_elapsed_time/num_writes );
+
+	return true;
+}
+
 void MagLib::menu_help()
 {
 	Serial.println("\n*****************************************");
@@ -1298,6 +1298,16 @@ void MagLib::menu_help()
 	Serial.println("\n\tL --> Log Data to SD Card.");
 	Serial.println("\n\tS --> Stream Data Over Serial.");
 	Serial.println("\n\tG --> Upload File [requires filename].\n\n");
+}
+
+void MagLib::EnableVerboseFeedback()
+{
+	verbosefb = true;
+}
+
+void MagLib::DisableVerboseFeedback()
+{
+	verbosefb = false;
 }
 
 void MagLib::printRawData(char *buffer, int format, int size)
@@ -1423,11 +1433,7 @@ uint8_t MagLib::setMux(unsigned int muxSet)
 
 int MagLib::getFiles(File dir, int numTabs)
 {
-	Serial.println("Listing files to bt...");
-	// sd.ls(&ble, "/", LS_R | LS_SIZE ); 	//SD file listing to BT
-
 	int fileCounter = 0;
-
 	char _filename[16];
 
 	while (true) {
@@ -1455,11 +1461,6 @@ int MagLib::getFiles(File dir, int numTabs)
 				Serial.println("/");
 				getFiles(entry, numTabs + 1);
 			}
-			// else {
-			// 	// files have sizes, directories do not
-			// 	Serial.print("\t\t");
-			// 	Serial.println(entry.size(), DEC);
-			// }
 
 			entry.close();
 			fileCounter++;

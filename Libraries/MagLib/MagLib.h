@@ -228,6 +228,9 @@ public:
 	/** Print an error to the serial port function
 	 */
 	void MagError(const char *err);
+	
+	void EnableVerboseFeedback();
+	void DisableVerboseFeedback();
 
 private:
 
@@ -304,7 +307,7 @@ private:
 	char packet_header[5]; 	// Used to denote start of binary data packet
 
 	//An array of objects that contain the correct addressing for each node
-	MLX90393 nodeAddrObj[NADDR];
+	MLX90393 nodeAddrObj[8];
 
 	// Pins specifying single multiplexerbus [S1 S0]
 	int _mux[2] = {10, 11};
@@ -313,7 +316,7 @@ private:
 	bool status_led = false;
 	
 	// Timing variable
-	unsigned long t_old;
+	unsigned long t_new, t_old;
 	
 	int val;
 
@@ -338,7 +341,7 @@ private:
 	int BAUD;
 	int LED;
 	int mux_bytes;
-	int sync_read;
+	int sync_read = 0;
 	
 	bool verbosefb = false;
 
@@ -346,7 +349,7 @@ private:
 	char SDbuf[BUF_SIZE];
 
 	// Data file name
-	char filename[64] = "0000.dat";
+	char filename[64] = "N64_0XYZ.dat";
 
 	// Initiate file system
 	SdFatSdioEX sd;

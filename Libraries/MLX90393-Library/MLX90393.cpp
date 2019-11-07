@@ -426,15 +426,15 @@ void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 
 	if (thisWire->available() == 7)
 	{
-		receiveBuffer[0] = thisWire->read(); //Status byte
-		receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
-		receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
-		receiveBuffer[3] = thisWire->read(); //xMag msb
-		receiveBuffer[4] = thisWire->read(); //xMag lsb
-		receiveBuffer[5] = thisWire->read(); //yMag msb
-		receiveBuffer[6] = thisWire->read(); //yMag lsb
-		receiveBuffer[7] = thisWire->read(); //zMag msb
-		receiveBuffer[8] = thisWire->read(); //zMag lsb
+		receiveBuffer[0] = thisWire->read(); 	//Status byte
+		receiveBuffer[1] = 0x00; 				//tMag msb
+		receiveBuffer[2] = 0x00; 				//tMag lsb
+		receiveBuffer[3] = thisWire->read(); 	//xMag msb
+		receiveBuffer[4] = thisWire->read(); 	//xMag lsb
+		receiveBuffer[5] = thisWire->read(); 	//yMag msb
+		receiveBuffer[6] = thisWire->read(); 	//yMag lsb
+		receiveBuffer[7] = thisWire->read(); 	//zMag msb
+		receiveBuffer[8] = thisWire->read(); 	//zMag lsb
 	}
 	else {
 		for (int i = 0; i < 9; i++) receiveBuffer[i] = 0x00;
