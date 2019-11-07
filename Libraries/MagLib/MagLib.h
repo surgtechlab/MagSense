@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // ****** Sensor System Size Definitions ****** //
 #define NODE_SINGLE   	10	// 3axes * 2bytes per axis + 4 time bytes
-#define NODE_FOUR		28	// 6bytes * 4nodes + 4 time bytes
+#define NODE_4			28	// 6bytes * 4nodes + 4 time bytes
 #define NODE_8			52	// 6bytes * 8nodes + 4 time bytes
 #define NODE_12			76	// 6bytes * 12nodes + 4 time bytes
 #define NODE_16       	100	// 6bytes * 16nodes + 4 time bytes
@@ -30,13 +30,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define NODE_128       	772	// 6bytes * 128nodes + 4 time bytes
 
 #define MAGONE			10  // 3axes * 2bytes per axis + 4 time bytes
-#define HAILO     		76	// 6bytes * 12nodes + 4 time bytes
+#define HAILO     		52	// 6bytes * 8nodes + 4 time bytes
 #define MAGTRIX       	100	// 6bytes * 16nodes + 4 time bytes
 #define BRACE			100 // 6bytes * 16nodes + 4 time bytes
 #define MAGBOARD       	388	// 6bytes * 64nodes + 4 time bytes
 #define FOOTPLATE		772	// 6bytes * 128nodes + 4 time bytes
-
-#define NADDR			8
 
 // ****** Platform Definitions ****** //
 #define HM10 	1

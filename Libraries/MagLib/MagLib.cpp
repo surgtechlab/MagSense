@@ -164,7 +164,6 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	if (!Serial) Serial.begin(BAUD);
 
 	if (verbosefb) Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
-	//while (!Serial) { SysCall::yield(); }
 
 	if (verbosefb) Serial.println("\nInitialising Mux...");
 
@@ -190,7 +189,7 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	uint8_t nAddress;
 	uint8_t nI2C;
 	uint8_t nMUX;
-	char zyxt = 0xE;
+	uint8_t zyxt = 0xE;
 	uint8_t GAIN_SEL = 0x00;  //
 	uint8_t RES_XYZ = 0x00;  //
 	uint8_t DIG_FILT = 0x1;
@@ -202,7 +201,7 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			nI2C = 1;
 			nAddress = 1;
 			break;
-		case NODE_FOUR:
+		case NODE_4:
 			nMUX = 1;
 			nI2C = 1;
 			nAddress = 4;
@@ -236,12 +235,13 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			nMUX = 4;
 			nI2C = 4;
 			nAddress = 4;
-			Serial.println("MagBOARD is Alive!"); //Signify system active and print version info
-			Serial.println(__FILE__);
-			Serial.println(__DATE__);
-			Serial.println(__TIME__);
-			Serial.println("****");
-			break;
+			if (verbosefb) {
+				Serial.println("MagBoard is Alive!"); //Signify system active and print version info
+				Serial.println(__FILE__);
+				Serial.println(__DATE__);
+				Serial.println(__TIME__);
+				Serial.println("****");
+			}
 		case NODE_128:
 			nMUX = 4;
 			nI2C = 4;
@@ -262,8 +262,7 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	}
 	// Set the number of muxes
 	NMUX = nMUX;
-	
-	mux_bytes = 96 * (nAddress / 4);
+	mux_bytes = 96 * (nAddress / 4);	// Used to specify offset for packets
 
 	// Init required i2c channels
 	for (int i = 0; i < nI2C; i++) initI2C(i);
@@ -325,7 +324,7 @@ void MagLib::readSensingNodesFor(int DEVICE, char *buffer)
 			nI2C = 1;
 			nAddress = 1;
 			break;
-		case NODE_FOUR:
+		case NODE_4:
 			nMUX = 1;
 			nI2C = 1;
 			nAddress = 4;
