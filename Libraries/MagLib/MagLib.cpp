@@ -416,9 +416,13 @@ void MagLib::readSensingNodes(	char *buffer,
 					
 					//Data ready - so read
 					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
+					
+					//for (int i = 0; i < 9; i++) Serial.print(receiveBuffer[i], HEX);
+					//Serial.println();
 
 					//Work out the address
 					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*24)+(i2cID*6)+4;
+					//Serial.println(packetOffset);
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
@@ -833,6 +837,10 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 						SD_upload();
 						Serial.println("^");
 						break;
+					case 'P':
+						readSensingNodesFor(DEVICE, buffer);
+						printASCIIData(buffer, DEVICE);
+						break;
 					case '?':
 						menu_help();
 						break;
@@ -850,7 +858,7 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 		default:
 			// NO BLE PLATFORM SPECIFIED
 			Serial.println("NO PLATFORM SPECIFIED ");
-			delay(2000);
+			delay(5000);
 			break;
 	}
 }
@@ -1016,7 +1024,8 @@ void MagLib::SD_datalog()
 			
 		case USB_COMMS:
 			//Set log-filename - Uses 8.3 name format
-			Serial.println("Enter filename");
+			if (verbosefb) Serial.println("Enter filename");
+			else Serial.println('E');
 			
 			while (Serial.available() < 8) { }
 			
@@ -1030,17 +1039,19 @@ void MagLib::SD_datalog()
 			return;
 	}
 	
-    Serial.print("Logging. Filename=");
-    Serial.println(filename);
+	if (verbosefb) {
+		Serial.print("Logging. Filename=");
+		Serial.println(filename);
+	}
 
     // Create file (truncate existing file)
     if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
 		Serial.println("ERROR: file open failed");
-		//ble.print("E");
 		return;
     } else {
 		file.truncate(0); //file with 0 bytes and absolutely no contents in it
-  		Serial.println("File open OK");
+  		if (verbosefb) Serial.println("File open OK");
+		else Serial.print('>');
     }
 
     digitalWrite(LED, HIGH); //Set StatusLED ON during write
@@ -1056,10 +1067,12 @@ void MagLib::SD_datalog()
 		readSensingNodesFor(DEVICE, SDbuf);    //take reading
 		write_size = file.write(SDbuf, BUF_SIZE);
 
-		// Print percentage of cycle
-		for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
-			Serial.printf("%d%%\n", j/(max_writes/100));
-
+		// Print every 10% percent of cycle
+		if (verbosefb) {
+			for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
+				Serial.printf("%d%%\n", j/(max_writes/100));
+		}
+		
 		// Blink LED for every 1% of file written
 		for (unsigned j = 0; j < max_writes; j+=max_writes/100) if (i == j) {
 			digitalWrite(13, led);
@@ -1091,18 +1104,20 @@ void MagLib::SD_datalog()
 	log_elapsed_time = millis() - log_start_time;
 	file.close();
 
-	Serial.print("\nWrite Stopped at cycle ");
-	Serial.print(num_writes);
-	Serial.print(" of ");
-	Serial.println(max_writes);
+	if (verbosefb) {
+		Serial.print("\nWrite Stopped at cycle ");
+		Serial.print(num_writes);
+		Serial.print(" of ");
+		Serial.println(max_writes);
 
-	//Print Performance Information to USB Serial
-	Serial.print("\nAverage Loop Time (ms): ");
-	Serial.println( log_elapsed_time/num_writes );
+		//Print Performance Information to USB Serial
+		Serial.print("\nAverage Loop Time (ms): ");
+		Serial.println( log_elapsed_time/num_writes );
 
-	Serial.print("\nTotal time elapsed: ");
-	Serial.print( log_elapsed_time/1000 );
-	Serial.println("s");
+		Serial.print("\nTotal time elapsed: ");
+		Serial.print( log_elapsed_time/1000 );
+		Serial.println("s");
+	}
 }
 
 void MagLib::SD_upload()
@@ -1297,7 +1312,8 @@ void MagLib::menu_help()
 	Serial.println("\n\tC --> Check SD Card Status.");
 	Serial.println("\n\tL --> Log Data to SD Card.");
 	Serial.println("\n\tS --> Stream Data Over Serial.");
-	Serial.println("\n\tG --> Upload File [requires filename].\n\n");
+	Serial.println("\n\tG --> Upload File [requires filename].");
+	Serial.println("\n\tP --> Print Formatted Data.");
 }
 
 void MagLib::EnableVerboseFeedback()
@@ -1347,13 +1363,13 @@ void MagLib::printASCIIData(char *receiveBuffer, int size)
 
 	unsigned long time = receiveBuffer[0]+(receiveBuffer[1]<<8)+(receiveBuffer[2]<<16)+(receiveBuffer[3]<<24);
 
-	Serial.printf("Read time: %ld ms|", time);
+	Serial.printf("Read time: %ld ms | ", time);
 
 	for (int i = 4; i < size; i+=6) { //loop through all sensor
 		Bx = (receiveBuffer[i] * 256) + receiveBuffer[i+1] * 0.00805f;
 		By = (receiveBuffer[i+2] * 256) + receiveBuffer[i+3] * 0.00805f;
 		Bz = (receiveBuffer[i+4] * 256) + receiveBuffer[i+5] * 0.02936f;
-		Serial.printf("N%d|x:%.0f,y:%.0f,z:%.0f| ", node, Bx, By, Bz);
+		Serial.printf("N%d|x:%.0f,y:%.0f,z:%.0f | ", node, Bx, By, Bz);
 		node = node +1;
 	}	// for loop
 

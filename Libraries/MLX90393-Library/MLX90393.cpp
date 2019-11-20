@@ -72,9 +72,13 @@ void MLX90393::configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uin
 	uint8_t lower_reg0 = 0x00;
 
 	//Register 1: TCMP = ON, BURST_SEL = 1110(ZYX-), BURST_DATA_RATE = 0 (Cont)
-	uint8_t upper_reg1 = 0x07;
-	uint8_t lower_reg1 = 0x81;
+	//uint8_t upper_reg1 = 0x07;
+	//uint8_t lower_reg1 = 0x81;
 
+	//Register 1: TCMP = OFF, BURST_SEL = 1110(ZYX-), BURST_DATA_RATE = 0 (Cont)
+	uint8_t upper_reg1 = 0x03;
+	uint8_t lower_reg1 = 0x81;
+	
 	//Register 2: OSR2=0, RES_XYZ=?, DIG_FILT = ?, OSR = ?
 	uint8_t upper_reg2 = 0x00;
 	uint8_t lower_reg2 = 0x00;
@@ -312,7 +316,7 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 
 void MLX90393::resetDevice(char *receiveBuffer, uint8_t select, int i2cLine)
 {
-	
+	/*
 	// Create pointer to desired I2C line object
 	i2c_t3* thisWire = WhichWire(i2cLine);
 	
@@ -322,6 +326,7 @@ void MLX90393::resetDevice(char *receiveBuffer, uint8_t select, int i2cLine)
 	uint8_t set_AH = 0x00;
 	uint8_t set_AL = 0x0C;
 	uint8_t addr = 0x00;
+	*/
 }
 
 /*Return number of bytes available, if after a request for read,
@@ -426,15 +431,15 @@ void MLX90393::GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 
 	if (thisWire->available() == 7)
 	{
-		receiveBuffer[0] = thisWire->read(); 	//Status byte
-		receiveBuffer[1] = 0x00; 				//tMag msb
-		receiveBuffer[2] = 0x00; 				//tMag lsb
-		receiveBuffer[3] = thisWire->read(); 	//xMag msb
-		receiveBuffer[4] = thisWire->read(); 	//xMag lsb
-		receiveBuffer[5] = thisWire->read(); 	//yMag msb
-		receiveBuffer[6] = thisWire->read(); 	//yMag lsb
-		receiveBuffer[7] = thisWire->read(); 	//zMag msb
-		receiveBuffer[8] = thisWire->read(); 	//zMag lsb
+		receiveBuffer[0] = thisWire->read(); //Status byte
+		receiveBuffer[1] = 0x00; //Wire.read(); //tMag msb
+		receiveBuffer[2] = 0x00; //Wire.read(); //tMag lsb
+		receiveBuffer[3] = thisWire->read(); //xMag msb
+		receiveBuffer[4] = thisWire->read(); //xMag lsb
+		receiveBuffer[5] = thisWire->read(); //yMag msb
+		receiveBuffer[6] = thisWire->read(); //yMag lsb
+		receiveBuffer[7] = thisWire->read(); //zMag msb
+		receiveBuffer[8] = thisWire->read(); //zMag lsb
 	}
 	else {
 		for (int i = 0; i < 9; i++) receiveBuffer[i] = 0x00;

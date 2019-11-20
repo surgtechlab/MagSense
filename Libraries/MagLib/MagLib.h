@@ -48,7 +48,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define ASYNC	2
 
 // Maximuim number of milliseconds to wait for USB serial to get ready on boot
-#define SERIAL_TIMEOUT_MS 5000
+#define SERIAL_TIMEOUT_MS 10000
 
 // ****** Brace+ Definitions ****** //
 #define LED_GREEN		27
