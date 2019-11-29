@@ -260,6 +260,10 @@ private:
 	 *	@details Test the speed and number of writes performed.
 	 */
 	bool test_SD_datalog();
+	
+	/**	Perfom full system reset.
+	 */
+	void System_Reset();
 
 	/**	Print the size, type and space of the SD card.
 	 */
@@ -298,7 +302,7 @@ private:
 
 	// Custom GATT Profile for BLE Data Streaming
 	const char* magServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
-	const char* magCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom characteristic GATT
+	const char* magCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom  characteristic 
 	const uint8_t magCharacteristicLen = 100;    // Data length (bytes)
 	const uint8_t magHandle = 0x75;
 	char *magPayload;
@@ -341,6 +345,7 @@ private:
 	int BAUD;
 	int LED;
 	int mux_bytes;
+	int i2c_bytes;
 	int sync_read = 0;
 	
 	bool verbosefb = false;

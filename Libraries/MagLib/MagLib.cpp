@@ -137,6 +137,7 @@ bool MagLib::initBLE()
 
 	// Set the advertising output power (range: min = 5, max = 0)
 	rn487xBle.setAdvPower(0);
+	rn487xBle.setConPower(0);
 	rn487xBle.reboot();
 	rn487xBle.enterCommandMode();
 	rn487xBle.clearAllServices();
@@ -267,7 +268,10 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			break;
 	}
 	// Set the number of muxes
-	NMUX = nMUX;
+	NMUX = nMUX;	
+		
+	i2c_bytes = 6 * nI2C;
+	mux_bytes = 6 * nI2C * nAddress;
 
 	// Init required i2c channels
 	for (int i = 0; i < nI2C; i++) initI2C(i);
@@ -421,7 +425,7 @@ void MagLib::readSensingNodes(	char *buffer,
 					//Serial.println();
 
 					//Work out the address
-					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*24)+(i2cID*6)+4;
+					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*i2c_bytes)+(i2cID*6)+4;
 					//Serial.println(packetOffset);
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
@@ -548,33 +552,7 @@ void MagLib::initBrace(char *buffer)
 	digitalWrite(7,LOW);
 	digitalWrite(8,LOW);
 
-	Serial.printf("Init i2c: 1\n");
-	// init i2c comms
-	Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_EXT, 400000);
-	Wire.setDefaultTimeout(200000);
-	Wire.setOpMode(I2C_OP_MODE_ISR);
-	Wire.setRate(I2C_RATE_400);
-
-	Serial.printf("Init i2c: 2\n");
-	// init i2c comms
-	Wire1.begin(I2C_MASTER, 0x00, I2C_PINS_37_38, I2C_PULLUP_EXT, 400000);
-	Wire1.setDefaultTimeout(200000);
-	Wire1.setOpMode(I2C_OP_MODE_ISR);
-	Wire1.setRate(I2C_RATE_400);
-
-	Serial.printf("Init i2c: 3\n");
-	// init i2c comms
-	Wire2.begin(I2C_MASTER, 0x00, I2C_PINS_3_4, I2C_PULLUP_EXT, 400000);
-	Wire2.setDefaultTimeout(200000);
-	Wire2.setOpMode(I2C_OP_MODE_ISR);
-	Wire2.setRate(I2C_RATE_400);
-
-	Serial.printf("Init i2c: 4\n");
-	// init i2c comms
-	Wire3.begin(I2C_MASTER, 0x00, I2C_PINS_56_57, I2C_PULLUP_EXT, 400000);
-	Wire3.setDefaultTimeout(200000);
-	Wire3.setOpMode(I2C_OP_MODE_ISR);
-	Wire3.setRate(I2C_RATE_400);
+	for (int i = 0; i < 4; i++) InitI2C(i);
 
 	uint8_t NodeAddresses[4] = {0x0C, 0x0D, 0x0E, 0x0F};
 	uint8_t nAddress = 4;
@@ -1188,6 +1166,25 @@ void MagLib::SD_upload()
 
 	file.close();
 	digitalWrite(LED, LOW); //Set StatusLED ON during write
+}
+
+void MagLib::System_Reset()
+{
+	// Reset comms system
+	switch (PLATFORM) {
+		case USB_COMMS:
+			Serial.end();
+			Serial.begin(BAUD);
+			break;
+		case RN4781:
+			rn487xBle.hwReset();
+			initBLE();
+			break;
+	}
+	
+	
+	
+	
 }
 
 bool MagLib::test_SD_datalog()
