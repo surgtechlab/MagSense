@@ -13,7 +13,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <SPI.h>
 #include <Time.h>
 #include <SoftwareSerial.h>
-#include "RN487x_BLE.h"
+#include "MagLibGATTProfile.h"
 #include "MLX90393.h"
 #include "SdFat.h"
 #include "sdios.h"
@@ -37,11 +37,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define FOOTPLATE		772	// 6bytes * 128nodes + 4 time bytes
 
 // ****** Platform Definitions ****** //
-#define HM10 	1
-#define RN4781 	2
-#define USB_COMMS 3
+#define HM10 		1
+#define RN4781 		2
+#define USB_COMMS 	3
 
-#define ble Serial1
+//#define ble Serial1
 
 // ****** I2C Timings Definitions ***** //
 #define SYNC	1
@@ -80,7 +80,7 @@ public:
 	/**	Default deconstructor
 	 */
 	~MagLib();
-	
+
 	/** Setup device for use with client application.
 	 *	@param platform The BLE system being used (HardwareSerial, i.e. RN4781 or SoftwareSerial, i.e. HM10)
 	 *	@param DEVICE Specific Mag device to be used (e.g. FOOTPLATE, HAILO, etc)
@@ -89,11 +89,11 @@ public:
 	 *	@param _read_sync Specify to make synchronous or asynchronous I2C calls.
 	 *	@param _verbosefb Set system feedback to serial port on or off.
 	 */
-	void setupForClient(int platform, 
-						int DEVICE, 
-						int ledPin, 
-						int baud, 
-						int _sync_read, 
+	void setupForClient(int platform,
+						int DEVICE,
+						int ledPin,
+						int baud,
+						int _sync_read,
 						bool _verbosefb);
 
 	/** Initiase a specific I2C communication channel
@@ -107,7 +107,9 @@ public:
 	 *	@param DEVICE Device containing
 	 *	@param buffer Array to return data received by MLXs
 	 */
-	void initSensingNodesFor(int DEVICE, int BAUD, char *buffer);
+	void initSensingNodesFor(	int DEVICE,
+								int BAUD,
+								char *buffer);
 
 	/**	Initalise sensor nodes before taking measurements
 	 *	@param NodeAddress array of 8-bit addresses for MLX90393 devices (ranging from 0x0C to 0x0F)
@@ -134,7 +136,8 @@ public:
 	 *	Set	address, mux and i2c lines accordingly.
 	 *	@param buffer array of chars to return data bytes from sensors
 	 */
-	void readSensingNodesFor(int DEVICE, char *buffer);
+	void readSensingNodesFor(	int DEVICE,
+								char *buffer);
 
 	/**	Read a number of sensors on specified mux and I2C lines
 	 *	@param buffer array to return data received by MLX's
@@ -171,12 +174,12 @@ public:
 	 *	@param i2cID I2C address of the desired node.
 	 *	@param muxID Multiplexer channel of the desired node.
 	 */
-	void testNode(	char *buffer, 
-					char zyxt, 
-					uint8_t address, 
+	void testNode(	char *buffer,
+					char zyxt,
+					uint8_t address,
 					uint8_t i2cID,
 					uint8_t muxID);
-	
+
 	/**	Read a specific node on the sensor platform.
 	 *	@param buffer array of chars to return data from sensors.
 	 *	@param zyxt selected desired axes/temperature values to read.
@@ -184,10 +187,10 @@ public:
 	 *	@param i2cID I2C address of the desired node.
 	 *	@param muxID Multiplexer channel of the desired node.
 	 */
-	void readNode(	char *buffer, 
-					char zyxt, 
-					uint8_t address, 
-					uint8_t i2cID, 
+	void readNode(	char *buffer,
+					char zyxt,
+					uint8_t address,
+					uint8_t i2cID,
 					uint8_t muxID);
 
 	/** ********** CLINENT FUNCTIONS ********** */
@@ -228,7 +231,7 @@ public:
 	/** Print an error to the serial port function
 	 */
 	void MagError(const char *err);
-	
+
 	void EnableVerboseFeedback();
 	void DisableVerboseFeedback();
 
@@ -260,7 +263,7 @@ private:
 	 *	@details Test the speed and number of writes performed.
 	 */
 	bool test_SD_datalog();
-	
+
 	/**	Perfom full system reset.
 	 */
 	void System_Reset();
@@ -277,7 +280,7 @@ private:
 	 *	Initialise communication with client application.
 	 */
 	void SD_upload();
-	
+
 	/** Print details about specific node to serial port
 	 * 	@param buffer Pointer to char array holding data.
 	 *	@param muxID Multiplexer line being used.
@@ -300,13 +303,6 @@ private:
 	 */
 	void menu_help();
 
-	// Custom GATT Profile for BLE Data Streaming
-	const char* magServiceUUID = "AD11CF40063F11E5BE3E0002A5D5C51B"; // Custom private service UUID
-	const char* magCharacteristicUUID = "BF3FBD80063F11E59E690002A5D5C501";  // Custom  characteristic 
-	const uint8_t magCharacteristicLen = 100;    // Data length (bytes)
-	const uint8_t magHandle = 0x75;
-	char *magPayload;
-
 	char receiveBuffer[9];	/** Buffer to receive raw data from each MLX device. */
 	char packet_header[5]; 	// Used to denote start of binary data packet
 
@@ -316,13 +312,11 @@ private:
 	// Pins specifying single multiplexerbus [S1 S0]
 	int _mux[2] = {10, 11};
 
-	// LED Indicator pin status 
+	// LED Indicator pin status
 	bool status_led = false;
-	
+
 	// Timing variable
 	unsigned long t_new, t_old;
-	
-	int val;
 
 	// Pins on Teensy board to be used for I2C communication.
 	i2c_pins I2C_PINS[4] = {
@@ -340,6 +334,7 @@ private:
 
 	// System Parameters
 	int NMUX;
+	int NI2C;
 	int PLATFORM;
 	int DEVICE;
 	int BAUD;
@@ -347,7 +342,7 @@ private:
 	int mux_bytes;
 	int i2c_bytes;
 	int sync_read = 0;
-	
+
 	bool verbosefb = false;
 
 	// SD Card properties
@@ -360,6 +355,8 @@ private:
 	SdFatSdioEX sd;
 	// Initiate test file
 	SdFile file;
+
+	MagLibGATTProfile bleDevice;
 
 	// Bluetooth device
 	//SoftwareSerial ble_ss;

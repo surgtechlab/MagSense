@@ -37,7 +37,7 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 	DEVICE = device;
 	LED = led;
 	BAUD = baud;
-	
+
 	sync_read = _sync_read;
 	verbosefb = _verbosefb;
 
@@ -71,11 +71,12 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 			//ble_ss.begin(9600);
 			break;
 		case RN4781:
-			if (initBLE()) {
-				if (verbosefb) Serial.printf("RN4781 Initialised as: %s\n", rn487xBle.getDeviceName());
+			if (bleDevice.init()) {
+				if (verbosefb) Serial.printf("RN4781 Initialised as: %s\n", bleDevice.getDeviceName());
 			}
 			else {
 				if (verbosefb) Serial.println("ERROR: RN4781 Initialisation failed.");
+				while(1);
 			}
 			break;
 		case USB_COMMS:
@@ -86,7 +87,7 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 			while(1);
 			break;
 	}
-	
+
 	Serial.println("RDY");
 }
 
@@ -104,68 +105,13 @@ void MagLib::initI2C(int i2cID)
 	thisWire->setRate(I2C_RATE_400);
 }
 
-bool MagLib::initBLE()
-{
-	// Set the optional debug stream
-  	rn487xBle.setDiag(Serial);
-  	// Initialize the BLE hardware with our sleep and wakeup pins
-  	rn487xBle.hwInit(-1, -1);
-	// Open communication pipe with the BLE module
-	ble.begin(rn487xBle.getDefaultBaudRate());
-	// Assign the BLE serial port to the BLE library
-  	rn487xBle.initBleStream(&ble);
-
-	if (!rn487xBle.swInit()) {
-		if (verbosefb) Serial.println("Init. procedure failed!");
-		return false;
-	}
-
-	// Fist, enter into command mode
-	rn487xBle.enterCommandMode();
-	// Stop advertising before starting the demo
-	rn487xBle.stopAdvertising();
-	rn487xBle.clearPermanentAdvertising();
-	rn487xBle.clearPermanentBeacon();
-	rn487xBle.clearImmediateAdvertising();
-	rn487xBle.clearImmediateBeacon();
-	rn487xBle.clearAllServices();
-
-	// Set the serialized device name
-	rn487xBle.setDevName("Brace+");
-	rn487xBle.setSupportedFeatures(0x4000); // Set to no prompt (no "CMD>")
-	rn487xBle.setDefaultServices(DEVICE_INFO_SERVICE);
-
-	// Set the advertising output power (range: min = 5, max = 0)
-	rn487xBle.setAdvPower(0);
-	rn487xBle.setConPower(0);
-	rn487xBle.reboot();
-	rn487xBle.enterCommandMode();
-	rn487xBle.clearAllServices();
-	// Set a private service
-	rn487xBle.setServiceUUID(magServiceUUID);
-	// Private service contains the sensors characteristic
-	rn487xBle.setCharactUUID(magCharacteristicUUID, WRITE_PROPERTY | NOTIFY_PROPERTY, magCharacteristicLen);
-
-
-	rn487xBle.startPermanentAdvertising(AD_TYPE_FLAGS, "06");
-	rn487xBle.startPermanentAdvertising(AD_TYPE_MANUFACTURE_SPECIFIC_DATA, "CD00FE14AD11CF40063F11E5BE3E0002A5D5C51B");
-
-	// take into account the settings by issuing a reboot
-	rn487xBle.reboot();
-	rn487xBle.enterCommandMode();
-
-	rn487xBle.startCustomAdvertising(100);
-
-	return true;
-}
-
 void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 {
 	if (!Serial) Serial.begin(BAUD);
 
 	if (verbosefb) Serial.printf("*** Begin system for %d nodes *** \n", DEVICE / 6);
 	if (verbosefb) Serial.println("\nInitialising Mux...");
-	
+
 	if (!sync_read) sync_read = ASYNC;
 
 	// Initialise mux Pins
@@ -195,7 +141,7 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	uint8_t RES_XYZ = 0x00;  //
 	uint8_t DIG_FILT = 0x1;
 	uint8_t OSR = 0x1;
-	
+
 	mux_bytes = 96;
 
 	switch (DEVICE) {
@@ -225,7 +171,7 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 				Serial.println(__TIME__);
 				Serial.println("****");
 			}
-			break;		
+			break;
 		case NODE_16:
 			nMUX = 1;
 			nI2C = 4;
@@ -268,8 +214,8 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			break;
 	}
 	// Set the number of muxes
-	NMUX = nMUX;	
-		
+	NMUX = nMUX;
+
 	i2c_bytes = 6 * nI2C;
 	mux_bytes = 6 * nI2C * nAddress;
 
@@ -305,10 +251,10 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 		//LOOP through each I2C line
 		for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++)
 		{
-			if (verbosefb) Serial.printf("\nI2C pins - SDA: PIN%d, SCL: PIN%d\n", 
-											WhichWire(i2cID)->getSDA(), 
+			if (verbosefb) Serial.printf("\nI2C pins - SDA: PIN%d, SCL: PIN%d\n",
+											WhichWire(i2cID)->getSDA(),
 											WhichWire(i2cID)->getSCL());
-											
+
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
@@ -319,7 +265,7 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 			} //end address loop
 		}//end i2c loop
 	}//end MUX loop
-	
+
 	Serial.println();
 }
 
@@ -388,7 +334,7 @@ void MagLib::readSensingNodes(	char *buffer,
 								uint8_t nAddress)
 {
 	Serial.flush();
-	
+
 	//Pack the current time into the receiveBuffer
 	unsigned long time = millis();
 
@@ -400,7 +346,7 @@ void MagLib::readSensingNodes(	char *buffer,
 
 		//LOOP through addresses
 		for (uint8_t nodeId=0; nodeId < nAddress; nodeId++)
-		{		
+		{
 			switch (sync_read) {
 			case ASYNC:
 				//REQUEST LOOP - i2c lines
@@ -417,10 +363,10 @@ void MagLib::readSensingNodes(	char *buffer,
 
 					//While there's no bytes available to read, do nothing...
 					while(!nodeAddrObj[nodeId].measureReady(i2cID));
-					
+
 					//Data ready - so read
 					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
-					
+
 					//for (int i = 0; i < 9; i++) Serial.print(receiveBuffer[i], HEX);
 					//Serial.println();
 
@@ -430,10 +376,10 @@ void MagLib::readSensingNodes(	char *buffer,
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
-					}	
+					}
 				}
 				break;
-			
+
 			case SYNC:
 				// Synchronous Measurement Loop
 				for (int i2cID = 0; i2cID < nI2C; i2cID++) {
@@ -444,16 +390,16 @@ void MagLib::readSensingNodes(	char *buffer,
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
-					}	
+					}
 				}
 				break;
 			default:
 				MagError("I2C Timings not specified.");
 				break;
-			}		
+			}
 		}
 	} //End for
- 
+
 	buffer[0] = (time) & 255;
 	buffer[1] = ((time)>>8) & 255;
 	buffer[2] = ((time)>>16) & 255;
@@ -469,7 +415,7 @@ void MagLib::testNode(	char *receiveBuffer,
 						uint8_t muxID)
 {
 	Serial.println("\n/*** SINGLE NODE TESTS ***/\n");
-	
+
 	uint8_t GAIN_SEL = 0x00;  //
 	uint8_t RES_XYZ = 0x01;  //
 	uint8_t DIG_FILT = 0x1;
@@ -481,7 +427,7 @@ void MagLib::testNode(	char *receiveBuffer,
 	delay(50);
 
 	Serial.printf("Node %d: ", node);
-	
+
 	nodeAddrObj[address].init(receiveBuffer, address, i2cID, muxID, verbosefb);
 	nodeAddrObj[address].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 	nodeAddrObj[address].startBurstMode(receiveBuffer, zyxt, i2cID);
@@ -511,12 +457,12 @@ void MagLib::readNode(char *buffer, char zyxt, uint8_t address, uint8_t i2cID, u
 void MagLib::debug(char *buffer, uint8_t muxID, uint8_t i2cID, uint8_t nodeID)
 {
 	uint8_t node = nodeID + i2cID*8 + muxID*32;
-	
+
 	Serial.printf("Node %d | MLX:L%d\tA:0x%x \t MUX:%d \t ", node, i2cID, nodeAddrObj[nodeID].getAddress(), muxID);
 	Serial.printf("status: 0x%x, data:  ", buffer[0]);
 	for (int i = 3; i<9;i++) Serial.print(buffer[i], HEX);
 	Serial.println();
-}	
+}
 
 void MagLib::initBrace(char *buffer)
 {
@@ -552,7 +498,7 @@ void MagLib::initBrace(char *buffer)
 	digitalWrite(7,LOW);
 	digitalWrite(8,LOW);
 
-	for (int i = 0; i < 4; i++) InitI2C(i);
+	for (int i = 0; i < 4; i++) initI2C(i);
 
 	uint8_t NodeAddresses[4] = {0x0C, 0x0D, 0x0E, 0x0F};
 	uint8_t nAddress = 4;
@@ -587,99 +533,75 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 	switch (PLATFORM) {
 		case RN4781:
 			// If connected to central device:
-			if (rn487xBle.getConnectionStatus())
+			if (bleDevice.getStatus())
 			{
 				digitalWrite(LED_GREEN, HIGH);
 				digitalWrite(LED_RED, LOW);
 
-				// If data available
-				if (rn487xBle.readLocalCharacteristic(magHandle))
+				char commsByte;
+
+				const char* payload = bleDevice.ReadMenu();
+
+				if (payload != NULL)
 				{
-					char commsByte;
-					const char* payload = rn487xBle.getLastResponse();
+					for (unsigned i = 0; i < sizeof(payload); i++) Serial.print(payload[i]);
+					Serial.println();
 
-					if (payload == NULL)
-					{
-						for (unsigned i = 0; i < sizeof(magPayload); i++) Serial.print(payload[i]);
-						Serial.println();
+					commsByte = payload[0];
 
-						commsByte = payload[0];
-
-						switch (commsByte) {
-							case '^':
-								magPayload[0] =  'R';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								Serial.println("Received ready command");
-								break;
-							case 'X':
-								comms_EstablishContact();
-								magPayload[0] = 'X';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								break;
-							case 'I':
-								magPayload[0] = 'i';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								Serial.println("Initialise System");
-								System_Initialise(DEVICE, buffer);
-								magPayload[0] = 'I';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								break;
-							case 'F':
-								files = getFiles(sd.open("/"), 0);
-								Serial.printf("Discovered %d files\n", files);
-								magPayload[0] = 'F';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								break;
-							case 'T':
-								magPayload[0] = 't';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								sd_card = test_SD_datalog();
-								if (sd_card) {
-									magPayload[0] = 'T';
-									rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-									Serial.println("Tests successful.");
-								}
-								else {
-									magPayload[0] = 'X';
-									rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								}
-								break;
-							case 'C':
-								Serial.println("check sd status");
-								comms_SD_Status();
-								magPayload[0] = 'C';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								break;
-							case 'S':
-								//ble.print("s");
-								System_Stream(DEVICE, buffer);
-								magPayload[0] = 'S';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								break;
-							case 'L':
-								magPayload[0] = 'l';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								SD_datalog();
-								magPayload[0] = 'L';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-								break;
-							case 'G':	// get datafile
-								magPayload[0] = 'g';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-					            SD_upload();
-								magPayload[0] = 'G';
-								rn487xBle.writeLocalCharacteristic(magHandle, magPayload);
-					            break;
-							default:	 // Unknown command - respond accordingly. RTFM
-								// Serial.print(magPayload[0], HEX);
-								// Serial.println(" ?");
-								break;
-						}	// switch commsByte
-					}	// if payload != null
-				}	// if data available
+					switch (commsByte) {
+						case '^':
+							bleDevice.WriteMenu('R');
+							Serial.println("Received ready command");
+							break;
+						case 'I':
+							//bleDevice.WriteMenu('i');
+							if (verbosefb) Serial.println("Initialise System");
+							System_Initialise(DEVICE, buffer);
+							bleDevice.WriteMenu('^');
+							break;
+						case 'F':
+							files = getFiles(sd.open("/"), 0);
+							if (verbosefb) Serial.printf("Discovered %d files\n", files);
+							bleDevice.WriteMenu('^');
+							break;
+						case 'T':
+							sd_card = test_SD_datalog();
+							if (sd_card) {
+								bleDevice.WriteMenu('^');
+								if (verbosefb) Serial.println("SD card tests successful.");
+							}
+							else {
+								bleDevice.WriteMenu('.');
+								if (verbosefb) Serial.println("SD card tests failed.");
+							}
+							break;
+						case 'C':
+							if (verbosefb) Serial.println("Checking SD status.");
+							comms_SD_Status();
+							bleDevice.WriteMenu('^');
+							break;
+						case 'S':
+							bleDevice.WriteMenu('s');
+							System_Stream(DEVICE, buffer);
+							bleDevice.WriteMenu('^');
+							break;
+						case 'L':
+							SD_datalog();
+							bleDevice.WriteMenu('^');
+							break;
+						case 'G':	// get datafile def
+				            SD_upload();
+							bleDevice.WriteMenu('^');
+				            break;
+						default:	 // Unknown command - respond accordingly. RTFM
+							Serial.print(payload[0], HEX);
+							Serial.println(" ?");
+							break;
+					}	// switch commsByte
+				}	// if payload != null
 			} else {	// if connected
 				// Not connected to a peer device
-				Serial.println("Not connected to a central device");
 				digitalWrite(LED_GREEN, LOW);
 				digitalWrite(LED_RED, HIGH);
 				// Delay inter connection polling - when not connected, check for new connections ever 1 second
@@ -758,18 +680,18 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 			}
 			break;
 		*/
-		
+
 		case USB_COMMS:
 			if (Serial.available() > 0)
 			{
 				int commsByte = Serial.read();
-				
+
 				if (verbosefb) {
 					Serial.print("\nCommand Recieved: ");
 					Serial.print(commsByte);
 					Serial.print("\n");
 				}
-				
+
 				int files = 0;
 				bool sd_card = false;
 
@@ -832,7 +754,7 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 				digitalWrite(LED, status_led); //Toggle LED output
 			}
 			break;
-		
+
 		default:
 			// NO BLE PLATFORM SPECIFIED
 			Serial.println("NO PLATFORM SPECIFIED ");
@@ -845,7 +767,7 @@ void MagLib::System_Initialise(int DEVICE, char *receiveBuffer)
 {
 	// Make LED on whilst initialising.
 	digitalWrite(LED, HIGH);
-	
+
 	initSensingNodesFor(DEVICE, BAUD, receiveBuffer);
 
 	// Make LED low and two second delay to signify completion.
@@ -871,14 +793,13 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 
 		t_start = millis();
 		// Wait for packet acknowledgement
-		while (Serial.available() < 1) { 
-		
+		while (Serial.available() < 1) {
 			if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
 				if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
 				return;
 			}
 		}
-		
+
 		digitalWrite(LED, status_led);
 		status_led = !status_led;
 
@@ -964,26 +885,25 @@ void MagLib::SD_datalog()
     SDbuf[BUF_SIZE-3] = 'X';
     SDbuf[BUF_SIZE-2] = 'Y';
     SDbuf[BUF_SIZE-1] = 'Z';
-	
+
 	bool led = false;
-	
+
 	int minute, hour, day, month;
 
 	//**********************************************
 	switch (PLATFORM) {
-		
+
 		case RN4781:
-		
 			//Set log-filename - Uses 8.3 name format
 			while (ble.available() < 4 ) { }
-		
+
 			month = ble.read();		// MONTH
 			day = ble.read();		// DAY
 			hour = ble.read();		// HOUR
 			minute = ble.read();	// MINUTE
-			
+
 			char buffer[64];
-					
+
 			if (minute < 10) strncpy(buffer, "0%d", 64);
 			else strncpy(buffer, "0%d", 64);
 			if (hour < 10) strncat(buffer, "0%d", 64);
@@ -992,31 +912,31 @@ void MagLib::SD_datalog()
 			else strncat(buffer, "0%d", 64);
 			if (month < 10) strncat(buffer, "0%d", 64);
 			else strncat(buffer, "0%d", 64);
-			
+
 			sprintf(filename, buffer, month, day, hour, minute);
-			
+
 			break;
-			
+
 		case HM10:
 			break;
-			
+
 		case USB_COMMS:
 			//Set log-filename - Uses 8.3 name format
 			if (verbosefb) Serial.println("Enter filename");
 			else Serial.println('E');
-			
+
 			while (Serial.available() < 8) { }
-			
+
 			for (int i = 0; i < 8; i++)
 				filename[i] = Serial.read();
-		
+
 			break;
-		
+
 		default:
 			Serial.println("\n*** NO PLATFORM SPECIFIED");
 			return;
 	}
-	
+
 	if (verbosefb) {
 		Serial.print("Logging. Filename=");
 		Serial.println(filename);
@@ -1050,13 +970,13 @@ void MagLib::SD_datalog()
 			for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
 				Serial.printf("%d%%\n", j/(max_writes/100));
 		}
-		
+
 		// Blink LED for every 1% of file written
 		for (unsigned j = 0; j < max_writes; j+=max_writes/100) if (i == j) {
 			digitalWrite(13, led);
 			led = !led;
 		}
-		 
+
 		if (write_size != BUF_SIZE) {
 			sd.errorPrint("write failed");
 			file.close();
@@ -1073,7 +993,7 @@ void MagLib::SD_datalog()
 
 		m_last = m;
 		//************************
-		  
+
 		num_writes = i;
 	} //End write loop *****************
 
@@ -1100,67 +1020,127 @@ void MagLib::SD_datalog()
 
 void MagLib::SD_upload()
 {
-	// Serial.println("Listing files to bt...");
-	// sd.ls(&ble, "/", LS_R | LS_SIZE ); 	//SD file listing to BT
-
 	float logfile_size;
 	uint32_t nr;
 
-	int minute, hour, day, month;
+	int month, day, hour, minute;
+	//**********************************************
+	switch (PLATFORM) {
 
-	// C# Code:
-	// byte[] filename = { month, day, hour, minute };
-	//Set log-filename - Uses 8.3 name format
-	while (ble.available() < 4 ) { }
+		case RN4781:
+			//Set log-filename - Uses 8.3 name format
+			while (ble.available() < 4 ) { }
 
-	month = ble.read();		// MONTH
-	day = ble.read();		// DAY
-	hour = ble.read();		// HOUR
-	minute = ble.read();	// MINUTE
-	
-	char buffer[64];
-			
-	if (minute < 10) strncpy(buffer, "0%d", 64);
-	else strncpy(buffer, "0%d", 64);
-	if (hour < 10) strncat(buffer, "0%d", 64);
-	else strncat(buffer, "0%d", 64);
-	if (day < 10) strncat(buffer, "0%d", 64);
-	else strncat(buffer, "0%d", 64);
-	if (month < 10) strncat(buffer, "0%d", 64);
-	else strncat(buffer, "0%d", 64);
-	
-	sprintf(filename, buffer, month, day, hour, minute);
+			month = ble.read();		// MONTH
+			day = ble.read();		// DAY
+			hour = ble.read();		// HOUR
+			minute = ble.read();	// MINUTE
 
-    Serial.print("Logging. Filename=");
-    Serial.println(filename);
+			char buffer[64];
+
+			if (minute < 10) strncpy(buffer, "0%d", 64);
+			else strncpy(buffer, "0%d", 64);
+			if (hour < 10) strncat(buffer, "0%d", 64);
+			else strncat(buffer, "0%d", 64);
+			if (day < 10) strncat(buffer, "0%d", 64);
+			else strncat(buffer, "0%d", 64);
+			if (month < 10) strncat(buffer, "0%d", 64);
+			else strncat(buffer, "0%d", 64);
+
+			sprintf(filename, buffer, month, day, hour, minute);
+
+			break;
+
+		case HM10:
+			break;
+
+		case USB_COMMS:
+			// Maximum of 8 bytes for name
+			if (verbosefb) Serial.println("Enter filename");
+			else Serial.println('E');
+
+			while (Serial.available() < 8) { }
+
+			for (int i = 0; i < 8; i++)
+				filename[i] = Serial.read();
+
+			break;
+
+		default:
+			Serial.println("\n*** NO PLATFORM SPECIFIED");
+			return;
+	}
+
+    if (verbosefb) {
+		Serial.print("Opening file: ");
+		Serial.println(filename);
+	}
 
   	// Create file (truncate existing file)
 	if (!file.open(filename, O_RDONLY)) {
-	    Serial.println("ERROR: file open failed");
+	    if (verbosefb) Serial.println("ERROR: file open failed");
+		else Serial.println('.');
 	    return;
 	} else {
 		Serial.println("File open OK");
 	}
 
 	logfile_size = file.fileSize();
-	Serial.print("\nLog Filesize = ");
-	Serial.println(logfile_size);
-	ble.println(logfile_size);
+	if (verbosefb) {
+		Serial.print("\nLog Filesize = ");
+		Serial.println(logfile_size);
+	}
 
 	digitalWrite(LED, HIGH); //Set StatusLED ON during write
 
+	int commsByte = 0;
+
 	while ( (nr = file.read(SDbuf, BUF_SIZE)) > 0 ) {
-		if (nr < BUF_SIZE) {
-		          //End of file
-				  SDbuf[0] = 0xFF;
-				  SDbuf[1] = 0xFF;
-				  SDbuf[2] = 0xFF;
-				  ble.write(SDbuf, BUF_SIZE);
-				  return;
-		} else {
-			ble.write(SDbuf, BUF_SIZE);
-		}
-	} //END READ LOOP ********
+		do {
+			if (nr < BUF_SIZE) {
+				//End of file
+				SDbuf[0] = 0xFF;
+				SDbuf[1] = 0xFF;
+				SDbuf[2] = 0xFF;
+				// Write to correct comms port
+				switch (PLATFORM) {
+					case USB_COMMS:
+						Serial.write(SDbuf, BUF_SIZE);
+						// Wait for packet acknowledgement
+						while (Serial.available() < 1) {
+							if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
+								if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
+								return;
+							}
+						}
+						commsByte = Serial.read();
+						break;
+
+					case RN4781:
+						break;
+				}
+				return;
+			}
+			else {
+				switch (PLATFORM) {
+					case USB_COMMS:
+						Serial.write(SDbuf, BUF_SIZE);
+						// Wait for packet acknowledgement
+						while (Serial.available() < 1) {
+							if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
+								if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
+								return;
+							}
+						}
+						commsByte = Serial.read();
+						break;
+
+					case RN4781:
+						break;
+				}
+			}
+		} while(commsByte == 71);
+	}
 
 	Serial.println("File upload finished.");
 
@@ -1181,10 +1161,10 @@ void MagLib::System_Reset()
 			initBLE();
 			break;
 	}
-	
-	
-	
-	
+
+
+
+
 }
 
 bool MagLib::test_SD_datalog()
@@ -1217,9 +1197,9 @@ bool MagLib::test_SD_datalog()
 	day = ble.read();		// DAY
 	hour = ble.read();		// HOUR
 	minute = ble.read();	// MINUTE
-	
+
 	char buffer[64];
-			
+
 	if (minute < 10) strncpy(buffer, "0%d", 64);
 	else strncpy(buffer, "0%d", 64);
 	if (hour < 10) strncat(buffer, "0%d", 64);
@@ -1228,7 +1208,7 @@ bool MagLib::test_SD_datalog()
 	else strncat(buffer, "0%d", 64);
 	if (month < 10) strncat(buffer, "0%d", 64);
 	else strncat(buffer, "0%d", 64);
-	
+
 	sprintf(filename, buffer, month, day, hour, minute);
 
     Serial.print("Logging. Filename=");
@@ -1302,7 +1282,7 @@ void MagLib::menu_help()
 	Serial.println("\n*****************************************");
 	Serial.println("     COMMS MENU INTERFACE FUNCTIONS     ");
 	Serial.println("*****************************************");
-	
+
 	Serial.println("\n\tI --> Initialise System.");
 	Serial.println("\n\tF --> Show SD Card Files.");
 	Serial.println("\n\tT --> Test SD Data Logging.");
@@ -1436,7 +1416,7 @@ uint8_t MagLib::setMux(unsigned int muxSet)
 			/*In otherwords, for the first mux, get the first bit (1&1)
 			* and shift it 0 times to right */
 		}
-		
+
 		// Delay to allow the mux to settle
 		delayMicroseconds(500);
 	}
