@@ -544,9 +544,7 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 
 				if (payload != NULL)
 				{
-					for (unsigned i = 0; i < sizeof(payload); i++) Serial.print(payload[i]);
-					Serial.println();
-
+					Serial.printf("Received data: %s\n", payload);
 					commsByte = payload[0];
 
 					switch (commsByte) {
@@ -1094,6 +1092,7 @@ void MagLib::SD_upload()
 	digitalWrite(LED, HIGH); //Set StatusLED ON during write
 
 	int commsByte = 0;
+	unsigned long t_start = millis();
 
 	while ( (nr = file.read(SDbuf, BUF_SIZE)) > 0 ) {
 		do {
