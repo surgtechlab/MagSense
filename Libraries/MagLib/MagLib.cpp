@@ -105,7 +105,7 @@ void MagLib::initI2C(int i2cID)
 	thisWire->setRate(I2C_RATE_400);
 }
 
-void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
+void MagLib::initSensingNodesFor(int _DEVICE, int BAUD, char *buffer)
 {
 	if (!Serial) Serial.begin(BAUD);
 
@@ -113,22 +113,6 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	if (verbosefb) Serial.println("\nInitialising Mux...");
 
 	if (!sync_read) sync_read = ASYNC;
-
-	// Initialise mux Pins
-	pinMode(_mux[0], OUTPUT);
-	pinMode(_mux[1], OUTPUT);
-
-	//Configure MUX enable pins (Enable is Low)
-	pinMode(5,OUTPUT);
-	pinMode(6,OUTPUT);
-	pinMode(7,OUTPUT);
-	pinMode(8,OUTPUT);
-
-	//Enable All MUX Chips
-	digitalWrite(5,LOW);
-	digitalWrite(6,LOW);
-	digitalWrite(7,LOW);
-	digitalWrite(8,LOW);
 
 	long _t = millis();
 
@@ -141,10 +125,13 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 	uint8_t RES_XYZ = 0x00;  //
 	uint8_t DIG_FILT = 0x1;
 	uint8_t OSR = 0x1;
+	
+	_muxSelect[0] = 5;
+	_muxSelect[1] = 6;
+	_muxSelect[2] = 7;
+	_muxSelect[3] = 8;
 
-	mux_bytes = 96;
-
-	switch (DEVICE) {
+	switch (_DEVICE) {
 		case NODE_SINGLE:
 			nMUX = 1;
 			nI2C = 1;
@@ -195,10 +182,24 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			}
 			break;
 		case NODE_128:
+			// Set system params
 			nMUX = 4;
 			nI2C = 4;
 			nAddress = 8;
-			mux_bytes = 192;
+			// Interface board has different MUX select pins to other boards.
+			_muxSelect[0] = 17;
+			_muxSelect[1] = 36;
+			_muxSelect[2] = 2;
+			_muxSelect[3] = 55;
+			// Enable interface LEDs
+			pinMode(LED_CONNECT, OUTPUT);
+			pinMode(LED_LOGGING, OUTPUT);
+			pinMode(LED_CONTACT, OUTPUT);
+			// Set all to low
+			digitalWrite(LED_CONNECT, LOW);
+			digitalWrite(LED_LOGGING, LOW);
+			digitalWrite(LED_CONTACT, LOW);
+			
 			if (verbosefb) {
 				Serial.println("FootPlate is Alive!"); //Signify system active and print version info
 				Serial.println(__FILE__);
@@ -213,16 +214,28 @@ void MagLib::initSensingNodesFor(int DEVICE, int BAUD, char *buffer)
 			nAddress = 1;
 			break;
 	}
-	// Set the number of muxes
+	// Set the number of muxes and calculate bytes returned per mux line/i2c line
 	NMUX = nMUX;
-
 	i2c_bytes = 6 * nI2C;
 	mux_bytes = 6 * nI2C * nAddress;
+	
+	// Initialise mux Pins
+	pinMode(_mux[0], OUTPUT);
+	pinMode(_mux[1], OUTPUT);
+	// Configure MUX enable pins
+	for (int i = 0; i < nMUX; i++) {
+		pinMode(_muxSelect[i], OUTPUT);
+	}
+	// Enable all MUX chips (active low)
+	for (int i = 0; i < nMUX; i++) {
+		digitalWrite(_muxSelect[i], LOW);
+	}
+	if (verbosefb) Serial.println("Initialised MUX chips"); 
 
 	// Init required i2c channels
 	for (int i = 0; i < nI2C; i++) initI2C(i);
 	if (verbosefb) Serial.println("Initialised I2C Bus");
-
+	
 	initSensingNodes(NodeAddresses, buffer, nMUX, nI2C, nAddress, zyxt, GAIN_SEL, RES_XYZ, DIG_FILT, OSR);
 
 	if (verbosefb) {
@@ -258,7 +271,7 @@ void MagLib::initSensingNodes(	uint8_t *NodeAddresses,
 			//LOOP through each address
 			for(uint8_t nodeId=0; nodeId < nAddress; nodeId++)
 			{
-				if (verbosefb) Serial.printf("\n\nInit node: %d\n", (nodeId + i2cID*4 + muxId*16));
+				if (verbosefb) Serial.printf("\n\nInit node: %d\n", (nodeId + i2cID*nAddress + muxId*nAddress*4));
 				nodeAddrObj[nodeId].init(receiveBuffer, NodeAddresses[nodeId], i2cID, muxId, verbosefb);
 				nodeAddrObj[nodeId].configure(receiveBuffer, i2cID, GAIN_SEL, RES_XYZ, DIG_FILT, OSR );
 				nodeAddrObj[nodeId].startBurstMode(receiveBuffer, zyxt, i2cID);
@@ -367,12 +380,8 @@ void MagLib::readSensingNodes(	char *buffer,
 					//Data ready - so read
 					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
 
-					//for (int i = 0; i < 9; i++) Serial.print(receiveBuffer[i], HEX);
-					//Serial.println();
-
 					//Work out the address
-					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*i2c_bytes)+(i2cID*6)+4;
-					//Serial.println(packetOffset);
+					uint16_t packetOffset = (muxId*192)+(nodeId*24)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
@@ -386,7 +395,7 @@ void MagLib::readSensingNodes(	char *buffer,
 					// Get measurement from sensor
 					nodeAddrObj[nodeId].GetMeasurement(receiveBuffer, 0xE, i2cID);
 					//Work out the address
-					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*24)+(i2cID*6)+4;
+					uint16_t packetOffset = (muxId*192)+(nodeId*24)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
 					for (int i = 0; i < NODE_N_BYTE; i++) {
 						buffer[i+packetOffset] = receiveBuffer[i+3];
@@ -525,10 +534,11 @@ void MagLib::readBrace(char *buffer)
 
 }
 
-void MagLib::comms_MainMenu(int DEVICE, char *buffer)
+void MagLib::comms_MainMenu(int _DEVICE, char *buffer)
 {
 	int files = 0;
 	bool sd_card;
+	
 
 	switch (PLATFORM) {
 		case RN4781:
@@ -689,6 +699,8 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 					Serial.print(commsByte);
 					Serial.print("\n");
 				}
+				
+				if (DEVICE == FOOTPLATE) digitalWrite(LED_CONNECT, HIGH);
 
 				int files = 0;
 				bool sd_card = false;
@@ -747,6 +759,11 @@ void MagLib::comms_MainMenu(int DEVICE, char *buffer)
 						break;
 				}
 			} else {
+				if (DEVICE == FOOTPLATE) {
+					digitalWrite(LED_CONNECT, LOW);
+					digitalWrite(LED_LOGGING, LOW);
+					digitalWrite(LED_CONTACT, LOW);
+				}
 				delay(500);
 				status_led = !status_led;
 				digitalWrite(LED, status_led); //Toggle LED output
@@ -868,6 +885,8 @@ void MagLib::comms_SD_Status()
 
 void MagLib::SD_datalog()
 {
+	if (DEVICE == FOOTPLATE) digitalWrite(LED_LOGGING, HIGH);
+	
 	uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
     uint32_t num_writes = 0;
     uint32_t m = 0; //microsec clock value (to regulate loop)
@@ -954,9 +973,6 @@ void MagLib::SD_datalog()
 
     //*** LOGGING LOOP ******************
 	log_start_time = millis();
-
-	Serial.flush();
-
 	for (uint32_t i = 0; i < max_writes; i++) {
 
 		m = micros();                 //read time
@@ -1000,7 +1016,7 @@ void MagLib::SD_datalog()
 	log_elapsed_time = millis() - log_start_time;
 	file.close();
 
-	if (verbosefb) {
+	if (verbosefb && (PLATFORM == USB_COMMS)) {
 		Serial.print("\nWrite Stopped at cycle ");
 		Serial.print(num_writes);
 		Serial.print(" of ");
@@ -1014,6 +1030,8 @@ void MagLib::SD_datalog()
 		Serial.print( log_elapsed_time/1000 );
 		Serial.println("s");
 	}
+	
+	if (DEVICE == FOOTPLATE) digitalWrite(LED_LOGGING, LOW);
 }
 
 void MagLib::SD_upload()
@@ -1037,13 +1055,13 @@ void MagLib::SD_upload()
 			char buffer[64];
 
 			if (minute < 10) strncpy(buffer, "0%d", 64);
-			else strncpy(buffer, "0%d", 64);
+			else strncpy(buffer, "%d", 64);
 			if (hour < 10) strncat(buffer, "0%d", 64);
-			else strncat(buffer, "0%d", 64);
+			else strncat(buffer, "%d", 64);
 			if (day < 10) strncat(buffer, "0%d", 64);
-			else strncat(buffer, "0%d", 64);
+			else strncat(buffer, "%d", 64);
 			if (month < 10) strncat(buffer, "0%d", 64);
-			else strncat(buffer, "0%d", 64);
+			else strncat(buffer, "%d", 64);
 
 			sprintf(filename, buffer, month, day, hour, minute);
 
@@ -1054,7 +1072,7 @@ void MagLib::SD_upload()
 
 		case USB_COMMS:
 			// Maximum of 8 bytes for name
-			if (verbosefb) Serial.println("Enter filename");
+			if (verbosefb) Serial.println("Enter filename:");
 			else Serial.println('E');
 
 			while (Serial.available() < 8) { }
@@ -1069,6 +1087,7 @@ void MagLib::SD_upload()
 			return;
 	}
 
+	Serial.flush();
     if (verbosefb) {
 		Serial.print("Opening file: ");
 		Serial.println(filename);
@@ -1080,7 +1099,7 @@ void MagLib::SD_upload()
 		else Serial.println('.');
 	    return;
 	} else {
-		Serial.println("File open OK");
+		if (verbosefb) Serial.print("File open OK: ");
 	}
 
 	logfile_size = file.fileSize();
@@ -1092,51 +1111,36 @@ void MagLib::SD_upload()
 	digitalWrite(LED, HIGH); //Set StatusLED ON during write
 
 	int commsByte = 0;
-	unsigned long t_start = millis();
+	unsigned long t_start;
 
 	while ( (nr = file.read(SDbuf, BUF_SIZE)) > 0 ) {
+		
+		t_start = millis();
+		
 		do {
 			if (nr < BUF_SIZE) {
 				//End of file
 				SDbuf[0] = 0xFF;
 				SDbuf[1] = 0xFF;
 				SDbuf[2] = 0xFF;
-				// Write to correct comms port
-				switch (PLATFORM) {
-					case USB_COMMS:
-						Serial.write(SDbuf, BUF_SIZE);
-						// Wait for packet acknowledgement
-						while (Serial.available() < 1) {
-							if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
-								if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
-								return;
-							}
-						}
-						commsByte = Serial.read();
-						break;
-
-					case RN4781:
-						break;
-				}
-				return;
 			}
-			else {
-				switch (PLATFORM) {
-					case USB_COMMS:
-						Serial.write(SDbuf, BUF_SIZE);
-						// Wait for packet acknowledgement
-						while (Serial.available() < 1) {
-							if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
-								if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
-								return;
-							}
+			// Write to correct comms port
+			switch (PLATFORM) {
+				case USB_COMMS:
+					Serial.write(SDbuf, BUF_SIZE);
+					// Wait for packet acknowledgement
+					while (Serial.available() < 1) {
+						if ((millis() - t_start) > SERIAL_TIMEOUT_MS) {
+							if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
+							file.close();
+							return;
 						}
-						commsByte = Serial.read();
-						break;
+					}
+					commsByte = Serial.read();
+					break;
 
-					case RN4781:
-						break;
-				}
+				case RN4781:
+					break;
 			}
 		} while(commsByte == 71);
 	}

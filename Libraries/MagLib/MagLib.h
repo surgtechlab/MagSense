@@ -55,6 +55,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define LED_RED			28
 #define LED_BLUE		29
 
+// ****** FootPlate Definitions ****** //
+#define LED_CONNECT		26
+#define LED_LOGGING		25
+#define LED_CONTACT		24
+
 // *********** SD Card Config ************* //
 // Size of read/write buffer
 const size_t BUF_SIZE = 1024; //bytes
@@ -311,6 +316,7 @@ private:
 
 	// Pins specifying single multiplexerbus [S1 S0]
 	int _mux[2] = {10, 11};
+	int _muxSelect[4];
 
 	// LED Indicator pin status
 	bool status_led = false;
