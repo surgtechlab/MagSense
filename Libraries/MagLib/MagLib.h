@@ -15,6 +15,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <SoftwareSerial.h>
 #include "MagLibGATTProfile.h"
 #include "MLX90393.h"
+#include "RN487x_BLE.h"
 #include "SdFat.h"
 #include "sdios.h"
 //#include "FreeStack.h"
@@ -38,17 +39,17 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 // ****** Platform Definitions ****** //
 #define HM10 		1
-#define RN4781 		2
+#define BLE 		2
 #define USB_COMMS 	3
 
-//#define ble Serial1
+#define ble Serial1
 
 // ****** I2C Timings Definitions ***** //
 #define SYNC	1
 #define ASYNC	2
 
 // Maximuim number of milliseconds to wait for USB serial to get ready on boot
-#define SERIAL_TIMEOUT_MS 10000
+#define SERIAL_TIMEOUT_MS 5000
 
 // ****** Brace+ Definitions ****** //
 #define LED_GREEN		27
@@ -156,11 +157,6 @@ public:
 							uint8_t nMUX,
 							uint8_t nI2C,
 							uint8_t nAddress);
-
-	/**	Initalise Bluetooth Low Energy device
-	 *	@return bool true if initialisation successful.
-	 */
-	bool initBLE();
 
 	/**	Initialise Brace+ system for use.
 	 *	@param buffer Array of bytes containing sensor init information.
@@ -322,7 +318,7 @@ private:
 	bool status_led = false;
 
 	// Timing variable
-	unsigned long t_new, t_old;
+	unsigned long t_start, t_finish;
 
 	// Pins on Teensy board to be used for I2C communication.
 	i2c_pins I2C_PINS[4] = {
@@ -350,6 +346,7 @@ private:
 	int sync_read = 0;
 
 	bool verbosefb = false;
+	bool sys_connect = false;
 
 	// SD Card properties
 	char SDbuf[BUF_SIZE];
@@ -361,7 +358,8 @@ private:
 	SdFatSdioEX sd;
 	// Initiate test file
 	SdFile file;
-
+	
+	// BLE Device (RN4781)
 	MagLibGATTProfile bleDevice;
 
 	// Bluetooth device

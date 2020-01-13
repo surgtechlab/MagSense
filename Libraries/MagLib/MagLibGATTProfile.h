@@ -27,10 +27,6 @@ public:
      */
     bool init();
 
-    /** Get current BLE connection status.
-     */
-    bool getStatus();
-
     /** Read menu characteristic.
      *  @return Data array of values received.
      */
@@ -44,12 +40,20 @@ public:
     /** Write data on stream characteristic.
      *  @param data Data to be written.
      */
-    void WriteStream(uint8_t *data);
+    void WriteStream(char *data);
 
     /** Return the advertised device name.
      *  @return device name.
      */
     const char* getDeviceName();
+	
+	/** Get current BLE connection status.
+     */
+    bool getStatus() { return rn487xBle.getConnectionStatus(); };
+	
+	/**	Check if bytes avaible at UART port.
+	 */
+	bool dataAvailable() { return rn487xBle.isInputBuffer(); };
 
 private:
 
@@ -64,8 +68,8 @@ private:
 
     // Custom GATT characteristic for MagLib menu system
     const char* menuUUID = "BF3FBD80063F11E59E690002A5D5C502";
-    static const uint8_t menuLen = 1;    // Data length (bytes)
-    static const uint8_t menuHandle = 0x78;
+    static const uint8_t menuLen = 8;    // Data length (bytes)
+    static const uint8_t menuHandle = 0x72;
     char menuPayload[menuLen*2 +1];
 
     // Advertised device name
