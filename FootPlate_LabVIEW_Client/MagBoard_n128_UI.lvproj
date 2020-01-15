@@ -43,7 +43,7 @@
 		<Item Name="MagBoard_n128_Serial_Logger.vi" Type="VI" URL="../MagBoard_n128_Serial_Logger.vi"/>
 		<Item Name="MagBoard_n128_Serial_FileIO.vi" Type="VI" URL="../MagBoard_n128_Serial_FileIO.vi"/>
 		<Item Name="MagBoard_n128_File_Viewer.vi" Type="VI" URL="../MagBoard_n128_File_Viewer.vi"/>
-		<Item Name="MagBoard_n128_File_Viewer_2.vi" Type="VI" URL="../MagBoard_n128_File_Viewer_2.vi"/>
+		<Item Name="ESCAPES_Main.vi" Type="VI" URL="../ESCAPES_Main.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
