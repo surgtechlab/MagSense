@@ -76,6 +76,7 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 			}
 			else {
 				if (verbosefb) Serial.println("ERROR: RN4781 Initialisation failed.");
+				else Serial.println(".BLE");
 				while(1);
 			}
 			break;
@@ -346,8 +347,7 @@ void MagLib::readSensingNodes(	char *buffer,
 								uint8_t nI2C,
 								uint8_t nAddress)
 {
-	Serial.flush();
-
+	Serial.flush();	
 	//Loop around the muxId instead, so that we can do async calls to each i2c bus
 	for(uint8_t muxId =0; muxId < nMUX; muxId++)
 	{
@@ -365,18 +365,17 @@ void MagLib::readSensingNodes(	char *buffer,
 					nodeAddrObj[nodeId].RequestMeasurement(receiveBuffer, zyxt, i2cID);
 				}
 				//WAIT LOOP - IS DATA READY
-				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {;
+				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
 					nodeAddrObj[nodeId].AsyncRxFill(receiveBuffer, zyxt, i2cID);
 				}
 				//READ LOOP
 				for(uint8_t i2cID = 0; i2cID < nI2C; i2cID++) {
-
+					//m = micros();
 					//While there's no bytes available to read, do nothing...
 					while(!nodeAddrObj[nodeId].measureReady(i2cID));
-
+					//Serial.printf("i2c %d wait for bytes: %d micros\n", i2cID, (micros() - m));
 					//Data ready - so read
 					nodeAddrObj[nodeId].takeMeasure(receiveBuffer,i2cID);
-
 					//Work out the address
 					uint16_t packetOffset = (muxId*mux_bytes)+(nodeId*i2c_bytes)+(i2cID*6)+4;
 					// Bytes 0-5 (+offset) are receiveBuffer 3-8
@@ -406,14 +405,14 @@ void MagLib::readSensingNodes(	char *buffer,
 		}
 	} //End for
 	
+	//unsigned long read_t = micros() - m;
+	//Serial.printf("Read time: %d\n", read_t);
 	unsigned long time = millis() - t_start;
 
 	buffer[0] = (time) & 255;
 	buffer[1] = ((time)>>8) & 255;
 	buffer[2] = ((time)>>16) & 255;
 	buffer[3] = ((time)>>24) & 255;
-
-	//t_old = time;
 }
 
 void MagLib::testNode(	char *receiveBuffer,
@@ -487,12 +486,10 @@ void MagLib::comms_MainMenu(int _DEVICE, char *buffer)
 				// Device is connected.
 				digitalWrite(LED_GREEN, HIGH);
 				
-				// Read BLE input and convert to int
-				const char* input = bleDevice.ReadMenu();
-				commsByte = atoi(input);
-				
+				// Read BLE input
+				commsByte = bleDevice.ReadMenu();
 				// Brief propagation delay
-				delay(5);
+				delay(10);
 							
 				switch (commsByte) {
 					case 0x5E:
@@ -547,7 +544,7 @@ void MagLib::comms_MainMenu(int _DEVICE, char *buffer)
 						}
 					default:	 // Unknown command - respond accordingly. RTFM
 						if (verbosefb) { 
-							Serial.println(input);
+							Serial.print(commsByte);
 							Serial.println(" ?");
 							delay(50);
 						}
@@ -783,7 +780,7 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 				
 			case BLE:
 				// Write buffer to BLE
-				bleDevice.WriteStream(SDbuf);
+				bleDevice.WriteStream(SDbuf, 100);
 				// Wait for packet acknowledgement
 				while (bleDevice.dataAvailable() < 1) {
 					if ((millis() - t_serial) > SERIAL_TIMEOUT_MS) {;
@@ -793,8 +790,7 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 				}
 
 				// Read BLE device and convert to int
-				const char* input = bleDevice.ReadMenu();
-				commsByte = atoi(input);
+				commsByte = bleDevice.ReadMenu();
 				
 				break;
 		}
@@ -955,36 +951,29 @@ void MagLib::SD_datalog()
 	
 	// To be packed into sensor read buffer[0:3]
 	t_start = millis();
-	
     //*** LOGGING LOOP ******************
 	log_start_time = millis();
 	for (uint32_t i = 0; i < max_writes; i++) {
-
 		m = micros();                 //read time
 		readSensingNodesFor(DEVICE, SDbuf);    //take reading
-		
 		write_size = file.write(SDbuf, BUF_SIZE);
 
 		// Print every 10% percent of cycle
 		if (verbosefb) {
-			for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
-				Serial.printf("%d%%\n", j/(max_writes/100));
+			if ((i % max_writes/10) == 0) printf("%d%%\n", i);
 		}
-		
-		// Blink LED for every 1% of file written
-		for (unsigned j = 1; j < max_writes; j+=max_writes/1000) if (i == j) {
+		// Blink LED for every 1% of file written (check remainder == 0)
+		if ((i % (max_writes/100)) == 0) {
 			digitalWrite(13, led);
 			led = !led;
-			Serial.print("%");
+			if (!verbosefb) Serial.print("%");
 		}
-		
 		if (write_size != BUF_SIZE) {
 			sd.errorPrint("write failed");
 			Serial.print(".");
 			file.close();
 			return;
 		}
-
 		m = micros() - m;
 
 		//Regulate loop rate here*
@@ -995,7 +984,6 @@ void MagLib::SD_datalog()
 
 		m_last = m;
 		//************************
-
 		num_writes = i;
 	} //End write loop *****************
 
@@ -1101,8 +1089,6 @@ void MagLib::SD_upload()
 	int commsByte = 0;
 	int max_reads = logfile_size / BUF_SIZE;
 	unsigned long t_start;
-	
-	//file.read(SDbuf, 1);
 
 	// Loop through all lines in file
 	for (int num_reads = 0; num_reads < max_reads; num_reads++) {
@@ -1409,7 +1395,7 @@ uint8_t MagLib::setMux(unsigned int muxSet)
 		}
 
 		// Delay to allow the mux to settle
-		delayMicroseconds(500);
+		delayMicroseconds(250);
 	}
 
 	return 1;

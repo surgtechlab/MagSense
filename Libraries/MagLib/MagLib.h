@@ -49,7 +49,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define ASYNC	2
 
 // Maximuim number of milliseconds to wait for USB serial to get ready on boot
-#define SERIAL_TIMEOUT_MS 5000
+#define SERIAL_TIMEOUT_MS 2500
 
 // ****** Brace+ Definitions ****** //
 #define LED_GREEN		27
@@ -65,7 +65,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // Size of read/write buffer
 const size_t BUF_SIZE = 1024; //bytes
 // Size logging file in MB where MB = 1,000,000 bytes.
-const uint32_t FILE_SIZE_MB = 5;
+const uint32_t FILE_SIZE_MB = 1;
 // File size in bytes.
 const uint32_t FILE_SIZE = 1000000UL*FILE_SIZE_MB; //unsigned long constant
 

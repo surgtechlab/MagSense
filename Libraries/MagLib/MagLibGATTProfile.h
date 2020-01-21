@@ -28,9 +28,9 @@ public:
     bool init();
 
     /** Read menu characteristic.
-     *  @return Data array of values received.
+     *  @return 16bit integer value of menu characterisic value.
      */
-    const char* ReadMenu();
+    int ReadMenu();
 
     /** Write byte on menu characteristic.
      *  @param bytes Data to be written.
@@ -39,8 +39,9 @@ public:
 
     /** Write data on stream characteristic.
      *  @param data Data to be written.
+	 *	@param size Length of the data array.
      */
-    void WriteStream(char *data);
+    void WriteStream(char *data, const int size);
 
     /** Return the advertised device name.
      *  @return device name.
@@ -68,7 +69,7 @@ private:
 
     // Custom GATT characteristic for MagLib menu system
     const char* menuUUID = "BF3FBD80063F11E59E690002A5D5C502";
-    static const uint8_t menuLen = 8;    // Data length (bytes)
+    static const uint8_t menuLen = 4;    // Data length (bytes)
     static const uint8_t menuHandle = 0x72;
     char menuPayload[menuLen*2 +1];
 

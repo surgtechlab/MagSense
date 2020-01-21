@@ -66,13 +66,14 @@ bool MagLibGATTProfile::init()
     return true;
 }
 
-const char* MagLibGATTProfile::ReadMenu()
+int MagLibGATTProfile::ReadMenu()
 {
     // Check data available
     if (rn487xBle.readLocalCharacteristic(menuHandle))
     {
+		// 
         const char* payload = rn487xBle.getLastResponse();
-        return payload;
+        return atoi(payload);
     }
 
     return 0;
@@ -84,53 +85,47 @@ void MagLibGATTProfile::WriteMenu(uint8_t byte)
     rn487xBle.writeLocalCharacteristic(menuHandle, menuPayload);
 }
 
-void MagLibGATTProfile::WriteStream(char *data)
+void MagLibGATTProfile::WriteStream(char *data, const int size)
 {	
-	unsigned long t2 = millis();
-	// Test function
-	//sprintf(streamPayload, "%x%x%x%x%x%x%x%x", 54, 76, 56, 85, 64, 50, 60, 70);
-	//rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
-	
-	//Serial.printf("write menu: %d millis\n", millis() - t2);
-
-	
-	size_t len = sizeof(data);
-	char temp[16];
-	int i;
+	char format[4];
+	int i, j;
 	int cyc = 0;
 	
-	while (cyc < len) {
-		// Cycle through whole buffer in batches of 20 bytes
+	// Fixed at 100 bytes for Brace+.
+	while (cyc < size) {
+		// Cycle through whole buffer in batches of 10 bytes
 		for (i = 0; i < 20; i++) {
 			// Create formatted data string
-			sprintf(temp, "%X", data[i+cyc]);
+			sprintf(format, "%02X", data[i+cyc]);
 			// Append to BLE payload
-			strcat(streamPayload, temp);	
+			strcat(streamPayload, format);	
 		}
+		for (j = 0; j < 19; j++) Serial.printf("%X-", data[j+cyc]);
+		Serial.printf("%X\n", data[cyc+20]);
 		
-		Serial.write(streamPayload, sizeof(streamPayload));
 		rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
-		// Empty payload to avoid overlap (Copy empty string into memory)
+		// Empty payload to avoid overload (Copy empty string into memory)
 		strcpy(streamPayload, "");
 		cyc += 20;
 	}
 	
-    // Number of remaining bytes left is variable, so create a fixed 
-	// length temporary buffer, copy bytes across and send that.
-		
-	uint8_t temp_buf[20];
-    memcpy(temp_buf, data, sizeof(temp_buf));
-	
-	for (i = 0; i < 20; i++) {
-		// Create temp formatted data string
-		sprintf(temp, "%x", temp_buf[i]);
-		// Append to BLE Payload
-		strcat(streamPayload, temp);
+	/*
+	for (i = 0; i < size; i+=20) {
+		// Write data packet in batches of 20
+		for (j = 0; j < 20; j++) {
+			streamPayload[j] = data[i+j];
+		}	
+		Serial.write(streamPayload, 20);
+		Serial.println();
+		rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
 	}
-	rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
-	// Empty payload to avoid overlap (Copy empty string into memory)
-	strcpy(streamPayload, "");
+	*/
 	
+	// Write packet footer
+	streamPayload[0] = 'X';
+	streamPayload[1] = 'Y';
+	streamPayload[2] = 'Z';
+	rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
 }
 
 const char* MagLibGATTProfile::getDeviceName()

@@ -1,5 +1,5 @@
 ﻿<?xml version='1.0' encoding='UTF-8'?>
-<Project Type="Project" LVVersion="16008000">
+<Project Type="Project" LVVersion="18008000">
 	<Property Name="NI.LV.All.SourceOnly" Type="Bool">false</Property>
 	<Property Name="SMProvider.SMVersion" Type="Int">201310</Property>
 	<Item Name="My Computer" Type="My Computer">
@@ -41,6 +41,8 @@
 		</Item>
 		<Item Name="MAG_UI_Main.vi" Type="VI" URL="../MAG_UI_Main.vi"/>
 		<Item Name="MagBoard_Processor.vi" Type="VI" URL="../MagBoard_Processor.vi"/>
+		<Item Name="MagBoard_n64_Serial_Viewer.vi" Type="VI" URL="../../MagBoard_n64_Serial_Viewer.vi"/>
+		<Item Name="data_process_packet.vi" Type="VI" URL="../../../FootPlate_LabVIEW_Client/subVIs/data_process_packet.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="Simple Error Handler.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Simple Error Handler.vi"/>
@@ -122,8 +124,29 @@
 				<Item Name="Application Directory.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Application Directory.vi"/>
 				<Item Name="NI_LVConfig.lvlib" Type="Library" URL="/&lt;vilib&gt;/Utility/config.llb/NI_LVConfig.lvlib"/>
 				<Item Name="8.6CompatibleGlobalVar.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/config.llb/8.6CompatibleGlobalVar.vi"/>
+				<Item Name="Read Delimited Spreadsheet.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Delimited Spreadsheet.vi"/>
+				<Item Name="Read Delimited Spreadsheet (DBL).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Delimited Spreadsheet (DBL).vi"/>
+				<Item Name="Read Lines From File (with error IO).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Lines From File (with error IO).vi"/>
+				<Item Name="Open File+.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Open File+.vi"/>
+				<Item Name="Read File+ (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read File+ (string).vi"/>
+				<Item Name="compatReadText.vi" Type="VI" URL="/&lt;vilib&gt;/_oldvers/_oldvers.llb/compatReadText.vi"/>
+				<Item Name="Close File+.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Close File+.vi"/>
+				<Item Name="Find First Error.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Find First Error.vi"/>
+				<Item Name="Read Delimited Spreadsheet (I64).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Delimited Spreadsheet (I64).vi"/>
+				<Item Name="Read Delimited Spreadsheet (string).vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Read Delimited Spreadsheet (string).vi"/>
 			</Item>
 			<Item Name="lvanlys.dll" Type="Document" URL="/&lt;resource&gt;/lvanlys.dll"/>
+			<Item Name="FGV States.ctl" Type="VI" URL="../../../../../Footplate/LabVIEW Files/MagBoard_n64_UI_LabVIEW_Client/subVIs/calibration/FGVs/FGV States.ctl"/>
+			<Item Name="Calibration FGV.vi" Type="VI" URL="../../../../../Footplate/LabVIEW Files/MagBoard_n64_UI_LabVIEW_Client/subVIs/calibration/FGVs/Calibration FGV.vi"/>
+			<Item Name="data_process_packet.vi" Type="VI" URL="../../../../../Footplate/LabVIEW Files/MagBoard_n64_UI_LabVIEW_Client/subVIs/data_process_packet.vi"/>
+			<Item Name="comms_Serial_Send_Com.vi" Type="VI" URL="../../../../../Footplate/LabVIEW Files/MagBoard_n64_UI_LabVIEW_Client/subVIs/comms_Serial_Send_Com.vi"/>
+			<Item Name="comms_Serial_Open.vi" Type="VI" URL="../../../../../Footplate/LabVIEW Files/MagBoard_n64_UI_LabVIEW_Client/subVIs/comms_Serial_Open.vi"/>
+			<Item Name="comms_Serial_Read_TXT.vi" Type="VI" URL="../../../../../Footplate/LabVIEW Files/MagBoard_n64_UI_LabVIEW_Client/subVIs/comms_Serial_Read_TXT.vi"/>
+			<Item Name="comms_Serial_Read_Fixed_Packet.vi" Type="VI" URL="../../LabVIEW Files/LabVIEW Client/subVIs/comms_Serial_Read_Fixed_Packet.vi"/>
+			<Item Name="data_grid_v128.vi" Type="VI" URL="../../LabVIEW Files/LabVIEW Client/subVIs/data_grid_v128.vi"/>
+			<Item Name="magboard_128_calibrate_nodes.vi" Type="VI" URL="../../LabVIEW Files/LabVIEW Client/subVIs/calibration/magboard_128_calibrate_nodes.vi"/>
+			<Item Name="FGV States.ctl" Type="VI" URL="../../LabVIEW Files/LabVIEW Client/subVIs/calibration/FGVs/FGV States.ctl"/>
+			<Item Name="Calibration FGV.vi" Type="VI" URL="../../LabVIEW Files/LabVIEW Client/subVIs/calibration/FGVs/Calibration FGV.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
 			<Item Name="Main Application" Type="EXE">
