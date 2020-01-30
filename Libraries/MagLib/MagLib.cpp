@@ -71,7 +71,7 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 			//ble_ss.begin(9600);
 			break;
 		case BLE:
-			if (bleDevice.init()) {
+			if (initBLE("RN_BLE")) {
 				if (verbosefb) Serial.printf("RN4781 Initialised as: %s\n", rn487xBle.getDeviceName());
 			}
 			else {
@@ -80,7 +80,7 @@ void MagLib::setupForClient(int platform, int device, int led, int baud, int _sy
 				while(1);
 			}
 			break;
-		case USB_COMMS:
+		case SERIAL:
 			Serial.begin(baud);
 			break;
 		default:
@@ -104,6 +104,64 @@ void MagLib::initI2C(int i2cID)
 
 	thisWire->setOpMode(I2C_OP_MODE_ISR);
 	thisWire->setRate(I2C_RATE_400);
+}
+
+bool MagLib::initBLE(const char* name)
+{
+	// Set the optional debug stream
+	rn487xBle.setDiag(Serial);
+
+	// Initialize the BLE hardware
+	rn487xBle.hwInit();
+
+	// Open the communication pipe with the BLE module
+	bleSerial.begin(rn487xBle.getDefaultBaudRate());
+
+	// Assign the BLE serial port to the BLE library
+	rn487xBle.initBleStream(&bleSerial);
+
+	// Finalize the init. process
+	if (!rn487xBle.swInit())
+	{
+		if (verbosefb) Serial.println("Init. procedure failed!");
+		return false;
+	}
+
+	// Enter command mode
+	rn487xBle.enterCommandMode();
+
+	// Factory reset
+	rn487xBle.factoryReset();
+
+	// Back into command mode
+	rn487xBle.enterCommandMode();
+
+	// Enable service: transparent UART
+	rn487xBle.setDefaultServices(UART_TRANSP_SERVICE);
+
+	// Enable features: fast mode (0x2000), and RN4020 MLDP streaming (0x0020)
+	rn487xBle.setSupportedFeatures(FAST_MODE | MLDP_SUPPORT_BMP);
+
+	// Setup connection parameters
+	rn487xBle.setConnectionParams(0x0010, 0x0024, 0x0001, 0x64);
+
+	// Set device name
+	rn487xBle.setDevName(name);
+
+	// Set the advertising/conneciton output power (range: min = 5, max = 0)
+	rn487xBle.setAdvPower(0); 
+	rn487xBle.setConPower(0);
+
+	// Reboot to make changes take effect.
+	rn487xBle.reboot();
+
+	// Enter data mode
+	rn487xBle.enterDataMode();
+	
+	// Clear out port before use
+	while (rn487xBle.isInputBuffer()) rn487xBle.getInputBuffer();
+	
+	return true;
 }
 
 void MagLib::initSensingNodesFor(int _DEVICE, int BAUD, char *buffer)
@@ -480,54 +538,57 @@ void MagLib::comms_MainMenu(int _DEVICE, char *buffer)
 	
 	switch (PLATFORM) {
 		case BLE:
-			// If data available			
-			if (bleDevice.getStatus())
+			// If data available?		
+			if (rn487xBle.isInputBuffer())
 			{
 				// Device is connected.
 				digitalWrite(LED_GREEN, HIGH);
-				
 				// Read BLE input
-				commsByte = bleDevice.ReadMenu();
-				// Brief propagation delay
-				delay(10);
+				commsByte = rn487xBle.getInputBuffer();
+				
+				if (verbosefb) {
+					Serial.print("\nCommand Recieved: ");
+					Serial.print(commsByte);
+					Serial.print("\n");
+				}
 							
 				switch (commsByte) {
-					case 0x5E:
-						bleDevice.WriteMenu('R');
+					case 94: 	// '^'
+						rn487xBle.sendData("R", 1);
 						if (verbosefb) Serial.println("Received ready command");
 						break;
-					case 49:	// 'I' won't work, look into.
-						bleDevice.WriteMenu('i');
+					case 73:	// 'I' won't work, look into.
+						rn487xBle.sendData("i", 1);
 						System_Initialise(DEVICE, buffer);
 						Serial.println("OK");
-						bleDevice.WriteMenu('^');
+						rn487xBle.sendData("^", 1);
 						delay(1000);
 						break;
 					case 'F':
 						files = getFiles(sd.open("/"), 0);
 						if (verbosefb) Serial.printf("Discovered %d files\n", files);
-						bleDevice.WriteMenu('^');
+						rn487xBle.sendData('^', 1);
 						break;
 					case 'T':
 						sd_card = test_SD_datalog();
 						if (sd_card) {
-							bleDevice.WriteMenu('^');
+							rn487xBle.sendData("^", 1);
 							if (verbosefb) Serial.println("SD card tests successful.");
 						}
 						else {
-							bleDevice.WriteMenu('.');
+							rn487xBle.sendData(".", 1);
 							if (verbosefb) Serial.println("SD card tests failed.");
 						}
 						break;
 					case 'C':
 						if (verbosefb) Serial.println("Checking SD status.");
 						comms_SD_Status();
-						bleDevice.WriteMenu('^');
+						rn487xBle.sendData("^", 1);
 						break;
-					case 53:
-						bleDevice.WriteMenu('s');
+					case 83:
+						rn487xBle.sendData("s", 1);
 						System_Stream(DEVICE, buffer);
-						bleDevice.WriteMenu('^');
+						rn487xBle.sendData("^", 1);
 						break;
 					case 'L':
 						SD_datalog();
@@ -542,6 +603,10 @@ void MagLib::comms_MainMenu(int _DEVICE, char *buffer)
 						if (verbosefb) {
 							Serial.println("Disconnected from client.");
 						}
+					case 37:
+						// Clear out port before use
+						while (rn487xBle.isInputBuffer()) rn487xBle.getInputBuffer();
+						break;
 					default:	 // Unknown command - respond accordingly. RTFM
 						if (verbosefb) { 
 							Serial.print(commsByte);
@@ -637,7 +702,7 @@ void MagLib::comms_MainMenu(int _DEVICE, char *buffer)
 			break;
 		*/
 
-		case USB_COMMS:
+		case SERIAL:
 			if (Serial.available() > 0)
 			{
 				int commsByte = Serial.read();
@@ -749,6 +814,11 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 	// Time packet relative to start of the stream command, 
 	// not since device first turned on.
 	t_start = millis();
+	
+	uint32_t m = 0;
+	uint32_t m_last = 0;
+	// Loop dT in micro sec (100Hz)
+	uint32_t loop_dt = 10000; //loop dT in micro secs (100Hz)
 
 	do {
 		// TAKE READING FROM MAGBOARD
@@ -762,7 +832,7 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 		// Begin comms on specified platform		
 		switch (PLATFORM)
 		{
-			case USB_COMMS:
+			case SERIAL:
 				// Write buffer to serial port.
 				Serial.write(SDbuf, 1024);
 				// Wait for packet acknowledgement
@@ -772,26 +842,26 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 						return;
 					}
 				}
-				
 				// Read Serial input when bytes available.
 				commsByte = Serial.read();
-				
 				break;
 				
 			case BLE:
+				m = micros();
 				// Write buffer to BLE
-				bleDevice.WriteStream(SDbuf, 100);
+				rn487xBle.sendData(SDbuf, 128);				
 				// Wait for packet acknowledgement
-				while (bleDevice.dataAvailable() < 1) {
+				
+				while (!rn487xBle.isInputBuffer()) {					
+					// If comms byte not received after timeout, return to main menu
 					if ((millis() - t_serial) > SERIAL_TIMEOUT_MS) {;
 						if (verbosefb) Serial.println("\n*** TIMEOUT EXCEEDED. RETURN TO MENU ***");
 						return;
 					}
 				}
-
-				// Read BLE device and convert to int
-				commsByte = bleDevice.ReadMenu();
 				
+				// Read BLE device and convert to int
+				commsByte = rn487xBle.getInputBuffer();
 				break;
 		}
 
@@ -799,7 +869,7 @@ void MagLib::System_Stream(int DEVICE, char *buffer)
 		digitalWrite(LED, status_led);
 		status_led = !status_led;
 	} while (commsByte == 83);
-
+	Serial.println("Stream stopped");
 	if (verbosefb) Serial.println("\nStream stopped.");
 }
 
@@ -915,7 +985,7 @@ void MagLib::SD_datalog()
 		case HM10:
 			break;
 
-		case USB_COMMS:
+		case SERIAL:
 			//Set log-filename - Uses 8.3 name format
 			if (verbosefb) Serial.println("Enter filename");
 			else Serial.println('E');
@@ -992,7 +1062,7 @@ void MagLib::SD_datalog()
 	log_elapsed_time = millis() - log_start_time;
 	file.close();
 
-	if (verbosefb && (PLATFORM == USB_COMMS)) {
+	if (verbosefb && (PLATFORM == SERIAL)) {
 		Serial.print("\nWrite Stopped at cycle ");
 		Serial.print(num_writes);
 		Serial.print(" of ");
@@ -1046,7 +1116,7 @@ void MagLib::SD_upload()
 		case HM10:
 			break;
 
-		case USB_COMMS:
+		case SERIAL:
 			// Maximum of 8 bytes for name
 			if (verbosefb) Serial.println("Enter filename:");
 			else Serial.println('E');
@@ -1130,7 +1200,7 @@ void MagLib::System_Reset()
 {
 	// Reset comms system
 	switch (PLATFORM) {
-		case USB_COMMS:
+		case SERIAL:
 			Serial.end();
 			Serial.begin(BAUD);
 			break;

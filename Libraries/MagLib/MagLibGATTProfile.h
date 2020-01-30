@@ -30,7 +30,7 @@ public:
     /** Read menu characteristic.
      *  @return 16bit integer value of menu characterisic value.
      */
-    int ReadMenu();
+    const char* ReadMenu();
 
     /** Write byte on menu characteristic.
      *  @param bytes Data to be written.
@@ -46,15 +46,19 @@ public:
     /** Return the advertised device name.
      *  @return device name.
      */
-    const char* getDeviceName();
+    const char* getDeviceName(void);
 	
 	/** Get current BLE connection status.
      */
-    bool getStatus() { return rn487xBle.getConnectionStatus(); };
+    bool getStatus(void) { return rn487xBle.getConnectionStatus(); };
 	
 	/**	Check if bytes avaible at UART port.
 	 */
-	bool dataAvailable() { return rn487xBle.isInputBuffer(); };
+	bool dataAvailable(void) { return rn487xBle.isInputBuffer(); };
+	
+	/**	Flush out all incoming serial data
+	 */
+	void clearBuffer(void) { ble.flush(); };
 
 private:
 

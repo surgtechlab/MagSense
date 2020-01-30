@@ -66,14 +66,12 @@ bool MagLibGATTProfile::init()
     return true;
 }
 
-int MagLibGATTProfile::ReadMenu()
+const char* MagLibGATTProfile::ReadMenu()
 {
     // Check data available
     if (rn487xBle.readLocalCharacteristic(menuHandle))
     {
-		// 
-        const char* payload = rn487xBle.getLastResponse();
-        return atoi(payload);
+        return rn487xBle.getLastResponse();
     }
 
     return 0;
@@ -100,31 +98,20 @@ void MagLibGATTProfile::WriteStream(char *data, const int size)
 			// Append to BLE payload
 			strcat(streamPayload, format);	
 		}
-		for (j = 0; j < 19; j++) Serial.printf("%X-", data[j+cyc]);
-		Serial.printf("%X\n", data[cyc+20]);
 		
 		rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
 		// Empty payload to avoid overload (Copy empty string into memory)
 		strcpy(streamPayload, "");
 		cyc += 20;
 	}
-	
-	/*
-	for (i = 0; i < size; i+=20) {
-		// Write data packet in batches of 20
-		for (j = 0; j < 20; j++) {
-			streamPayload[j] = data[i+j];
-		}	
-		Serial.write(streamPayload, 20);
-		Serial.println();
-		rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
-	}
-	*/
-	
+		
 	// Write packet footer
-	streamPayload[0] = 'X';
-	streamPayload[1] = 'Y';
-	streamPayload[2] = 'Z';
+	char header[3] = { 'X', 'Y', 'Z' };
+	
+	for (i = 0; i < 3; i++) {
+		sprintf(format, "%02X", header[i]);
+		strcat(streamPayload, format);
+	}	
 	rn487xBle.writeLocalCharacteristic(streamHandle, streamPayload);
 }
 

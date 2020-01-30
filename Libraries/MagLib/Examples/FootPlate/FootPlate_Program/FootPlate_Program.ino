@@ -12,7 +12,7 @@ void setup() {
 							FOOTPLATE, 	// Device (nodes to read from)
 							13, 		// LED pin
 							115200,		// BAUD rate
-							SYNC,		// Sensor read timings
+							ASYNC,		// Sensor read timings
 							false);		// Verbose feedback off
 }
 

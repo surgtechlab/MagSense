@@ -40,9 +40,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 // ****** Platform Definitions ****** //
 #define HM10 		1
 #define BLE 		2
-#define USB_COMMS 	3
+#define SERIAL 		0
 
-#define ble Serial1
+#define bleSerial	Serial1
 
 // ****** I2C Timings Definitions ***** //
 #define SYNC	1
@@ -108,6 +108,9 @@ public:
 	 *	@param i2cLine I2C Channel to be initisalised.
 	 */
 	void initI2C(int i2cLine);
+	
+	
+	bool initBLE(const char* name);
 
 	/**	Initalise sensing nodes for specific device
 	 *	@param DEVICE Device containing
