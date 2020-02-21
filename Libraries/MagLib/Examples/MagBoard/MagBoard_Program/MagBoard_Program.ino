@@ -8,7 +8,7 @@ char buffer[MAGBOARD];
 
 void setup() {
   // put your setup code here, to run once:
-  magboard.setupForClient(	USB_COMMS, 	// Comms platform
+  magboard.setupForClient(	SERIAL, 	// Comms platform
 							MAGBOARD, 	// Device (nodes to read from)
 							13, 		// LED pin
 							115200,		// BAUD rate
