@@ -38,6 +38,7 @@
 // ------------------- Commands -----------------------
 #define CMD_CHAR              '$'
 #define ENTER_CMD             "$$$"
+#define ENABLE_ECHO			  '+'
 #define EXIT_CMD              "---\r"
 #define ENTER_DATA            (EXIT_CMD)
 #define DATA_LAST_CHAR        '\r'
@@ -62,6 +63,8 @@
 
 #define SET_SUPPORTED_FEATURES "SR,"
 // > Bitmap of supported features
+#define FLOW_CONTROl		  0x8000
+#define FAST_MODE			  0x2000
 #define NO_BEACON_SCAN_BMP    0x1000
 #define NO_CONNECT_SCAN_BMP   0x0800
 #define NO_DUPLICATE_SCAN_BMP 0x0400
@@ -76,6 +79,9 @@
 #define UART_TRANSP_SERVICE   0x40
 #define BEACON_SERVICE        0x20
 #define AIRPATCH_SERVICE      0x10
+
+#define SET_CONNECT_PARAMS	  "ST,"
+// > Bitmap of services
 
 //-- Get Commands
 #define GET_SETTINGS          "G:,"
@@ -129,6 +135,7 @@
 #define GET_RSSI_LEVEL        "M"
 #define REBOOT                "R,1"
 #define DISPLAY_FW_VERSION    "V"
+#define INIT_UART			  "I"
 
 // --- List Commands
 
@@ -157,6 +164,8 @@
 #define PROMPT                "CMD> "  // exact prompt is "CMD> " (last char is a space)
 #define PROMPT_CR             "CMD\r\n"
 #define PROMPT_END            "END"
+#define ECHO_ON				  "Echo ON"
+#define ECHO_OFF			  "Echo OFF"
 
 //-- Response
 #define AOK_RESP              "AOK"
@@ -169,6 +178,7 @@
 
 //-- Events
 #define REBOOT_EVENT          "%REBOOT%"
+#define DISCONNECT			  "%DISCONNECT%"
 
 
 #endif

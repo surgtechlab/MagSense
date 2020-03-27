@@ -77,6 +77,8 @@ public:
   void sendData(char *data, uint16_t dataLen);
   bool disableBeacon(void);
   bool enableBeacon(void);
+  bool enableStream(void);
+  bool enableEcho(void);
   bool enableBeaconAndAdv(void);
   bool factoryReset(void);
   bool setAdvPower(uint8_t value);
@@ -87,6 +89,7 @@ public:
   bool disableLowPower(void);
   bool setSupportedFeatures(uint16_t bitmap);
   bool setDefaultServices(uint8_t bitmap);
+  bool setConnectionParams(uint16_t min_interval, uint16_t max_interval, uint16_t latency, uint16_t timeout);
   bool retrieveBtAddress(void);
   bool getFirmwareVersion(void);
   bool clearAllServices(void);
@@ -116,6 +119,8 @@ public:
   bool writeLocalCharacteristic(uint16_t handle, const char value[]);
   bool readLocalCharacteristic(uint16_t handle);
   int getConnectionStatus(void);
+  void flush(void);
+  void cleanInputBuffer(void);
   inline const char* getPeerAddress() { return peerAddress;};
   inline const char* getBtAddress()   { return btAddress;};
   inline const char* getDeviceName()  { return deviceName;};
@@ -126,6 +131,7 @@ public:
     return false;
   }
   inline char getInputBuffer(){ return bleSerial->read();};
+  inline char available() { return bleSerial->available(); };
   
 // --------------------------------------- Protected section ---------------------------------------
 protected:
@@ -136,8 +142,7 @@ private:
   bool setBeaconFeatures(const char *value);
   bool getSettings(uint16_t addr, uint8_t sizeToRead);
   bool setSettings(uint16_t addr, const char *data);
-  void flush(void);
-  void cleanInputBuffer(void);
+
   void setOperationMode(operationMode_t newMode);
   operationMode_t getOperationMode(void);
   uint16_t readUntilCR(char* buffer, uint16_t size, uint16_t start = 0);

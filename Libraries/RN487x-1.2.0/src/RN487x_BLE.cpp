@@ -324,6 +324,19 @@ void Rn487xBle::sendCommand(String stream)
   bleSerial->print(stream);
 }
 
+bool Rn487xBle::enableEcho(void)
+{
+  debugPrintLn("[enableEcho]");
+
+  sendCommand(ENABLE_ECHO);
+  if (expectResponse(ECHO_ON, DEFAULT_CMD_TIMEOUT))
+  {
+    return true;
+  }
+  return false;
+}
+
+
 void Rn487xBle::sendData(char *data, uint16_t dataLen)
 {
   bleSerial->write(data, dataLen);
@@ -592,6 +605,25 @@ bool Rn487xBle::setDevName(const char *newName)
 }
 
 // *********************************************************************************
+// Initiates UART Transparent Operation
+// *********************************************************************************
+// Input : void
+// Output: bool true if successfully executed
+// *********************************************************************************
+bool Rn487xBle::enableStream(void)
+{
+	debugPrintLn("[initializeTransparentUART]");
+	
+	sendCommand(INIT_UART);
+	if (expectResponse(AOK_RESP, DEFAULT_CMD_TIMEOUT))
+	{
+		return true;
+	}
+	return false;
+}
+
+
+// *********************************************************************************
 // Enables Low-Power operation mode
 // *********************************************************************************
 // Module enables low-power mode by running 32kHz clock with much lower power
@@ -684,6 +716,36 @@ bool Rn487xBle::setDefaultServices(uint8_t bitmap)
   memcpy(&uartBuffer[len], c, newLen);
   
   sendCommand(uartBuffer);
+  if (expectResponse(AOK_RESP, DEFAULT_CMD_TIMEOUT))
+  {
+    return true;
+  }
+  return false;
+}
+
+// *********************************************************************************
+// Sets the default services to be supported by the module in GAP server role
+// *********************************************************************************
+// Supporting service in server role means that the host MCU must supply the values 
+// of all characteristics in supported services and to provide client access to
+// those values upon request. Once the service bitmap is modified, the device must
+// reboot() to make the new services effective.
+// Input : uint8_t bitmap that indicates the services to be supported as a server
+// Output: bool true if successfully executed
+// *********************************************************************************
+bool Rn487xBle::setConnectionParams(uint16_t min_interval, uint16_t max_interval, uint16_t latency, uint16_t timeout)
+{
+  uint8_t len = strlen(SET_CONNECT_PARAMS);
+  char parameters[20];
+  sprintf(parameters, "%04X,%04X,%04X,%04X", min_interval, max_interval, latency, timeout);
+  uint8_t newLen = strlen(parameters);
+
+  this->flush();
+  memcpy(uartBuffer, SET_CONNECT_PARAMS, len);
+  memcpy(&uartBuffer[len], parameters, newLen);
+  
+  sendCommand(uartBuffer);
+
   if (expectResponse(AOK_RESP, DEFAULT_CMD_TIMEOUT))
   {
     return true;

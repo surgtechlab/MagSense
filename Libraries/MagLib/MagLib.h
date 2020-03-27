@@ -13,12 +13,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <SPI.h>
 #include <Time.h>
 #include <SoftwareSerial.h>
-#include "MagLibGATTProfile.h"
 #include "MLX90393.h"
 #include "RN487x_BLE.h"
 #include "SdFat.h"
 #include "sdios.h"
-//#include "FreeStack.h"
 
 // ****** Sensor System Size Definitions ****** //
 #define NODE_SINGLE   	10	// 3axes * 2bytes per axis + 4 time bytes
@@ -42,6 +40,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define BLE 		2
 #define SERIAL 		0
 
+#define debugSerial	Serial
 #define bleSerial	Serial1
 
 // ****** I2C Timings Definitions ***** //
@@ -60,6 +59,16 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define LED_CONNECT		26
 #define LED_LOGGING		25
 #define LED_CONTACT		24
+
+// ****** Logging Timing Definitions ****** //
+#define ONE_MIN			60
+#define TWO_MIN			120
+#define FIVE_MIN		300
+#define TEN_MIN			600
+#define HALF_HOUR		1800
+#define HOUR			3600
+#define TWO_HOUR		7200
+#define FOUR_HOUR		14400
 
 // *********** SD Card Config ************* //
 // Size of read/write buffer
@@ -108,8 +117,8 @@ public:
 	 *	@param i2cLine I2C Channel to be initisalised.
 	 */
 	void initI2C(int i2cLine);
-	
-	
+
+
 	bool initBLE(const char* name);
 
 	/**	Initalise sensing nodes for specific device
@@ -261,6 +270,14 @@ private:
 	 *	@param buffer array of chars to return data from sensors.
 	 */
 	void System_Stream(int DEVICE, char *buffer);
+	
+	/**	Log data over a long period of time.
+	 * 	@param delta Time between adjacent sensor reads in seconds.
+	 *	@param period Total time to read sensors for in seconds.
+	 *	@param DEVICE device to interface with.
+	 *	@param buffer array of chars to return data from sensors.
+	 */
+	void System_LongTerm_Logging(int delta, int period, int DEVICE, char *buffer);
 
 	/** Test the SD logging feature
 	 *  @details Perform a finite number of sensor readings and write to file.
@@ -323,13 +340,21 @@ private:
 	// Timing variable
 	unsigned long t_start, t_finish;
 
-	// Pins on Teensy board to be used for I2C communication.
+	// Pins on Teensy 3.6 board to be used for I2C communication.
+#if defined(__MK66FX1M0__)
 	i2c_pins I2C_PINS[4] = {
 		I2C_PINS_18_19,
 		I2C_PINS_37_38,
 		I2C_PINS_3_4,
 		I2C_PINS_56_57
 	};
+	// Pins on Teensy 3.2 board to be used for I2C communication.
+#elif defined(__MK20DX256__)
+	i2c_pins I2C_PINS[2] = {
+		I2C_PINS_18_19,
+		I2C_PINS_29_30
+	};
+#endif
 
 	/** Point to wire buses to simplify communication code.
 	 *	@param wireNo Desired I2C channel to communicate on.
@@ -361,9 +386,6 @@ private:
 	SdFatSdioEX sd;
 	// Initiate test file
 	SdFile file;
-	
-	// BLE Device (RN4781)
-	MagLibGATTProfile bleDevice;
 
 	// Bluetooth device
 	//SoftwareSerial ble_ss;
