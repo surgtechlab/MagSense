@@ -45,60 +45,82 @@ public:
 /* ********** COMMUNICATION FUNCTIONS ********** */
 
 	/** Initialise by exiting any previously set modes and resetting the device.
+	 * 
 	 *	@param receiveBuffer Returns a status byte.
 	 *	@param Address I2C Address of MLX90393 device for comms on the I2C bus.
 	 */
 	void init(char *receiveBuffer, int address, int i2cLine, int muxId, bool verbose);
 
 	/** Configure device by setting gain, hall_config and address register.
+	 * 
 	 *	@param receiveBuffer Returns a status byte.
 	 */
 	void configure(char *receiveBuffer, int i2cLine, uint8_t GAIN_SEL, uint8_t RES_XYZ, uint8_t DIG_FILT, uint8_t OSR);
 
 	/** Begin burst mode in order to have device continuously send data.
+	 * 
 	 *	@param receiveBuffer Returns a status byte.
 	 *	@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
+	 *	@param i2cLine I2C channel to communicate on.
 	 */
 	void startBurstMode(char *receiveBuffer, char zyxt, int i2cLine);
 
-	/**	Reset device on measurement failure.
-	 *	@param receiveBuffer Returns a status byte.
-	 *	@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
-	 *	@param i2cLine I2C Communication channel to address chip on.
-	 */
-	void resetDevice(char *receiveBuffer, uint8_t select, int i2cLine);
-
-	/** Read data measured by the device.
+	/** Synchronously read data measured by the device.
+	 * 
 	 *	@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
 	 *	@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
+	 *	@param i2cLine I2C channel to communicate on.
 	 */
-	void ReadMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
-
-	/** Pair of functions to perform async read **/
-
 	void GetMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
 	
+	// ***** ASYNC MEASUREMENT METHODS ***** //
+
+	/** Begin async measurement by requesting node to begin conversion process.
+	 *
+	 */ 
 	void RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine);
-	uint8_t takeMeasure(char *receiveBuffer, int i2cLine);
-	uint8_t measureReady(uint8_t i2cLine);
+
+	/**	Request 7 bytes of data from each node.
+	 * 
+	 *	@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
+	 *	@param zyxt Byte to specify which axes are to be read (1110 -> reading Z, Y and X).
+	 *	@param i2cLine I2C channel to communicate on.
+	 */
 	void AsyncRxFill(char *receiveBuffer, char zyxt, int i2cLine);
 
+	/** Wait for previous async requests to finish and that the correct number of bytes are available.
+	 * 
+	 * 	@param i2cLine I2C channel to communicate on.
+	 * 	return Number of bytes available.
+	 */
+	uint8_t measureReady(uint8_t i2cLine);
+
+	/**	Once conversion has finished, pull data from node.
+	 * 
+	 *	@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
+	 *	@param i2cLine I2C channel to communicate on.
+	 */
+	void takeMeasure(char *receiveBuffer, int i2cLine);
+	
 
 /* ********** DATA DISPLAY FUNCTIONS ********** */
 
 	/** Print raw data to serial port.
+	 * 
 	 *	@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
 	 *	@param format Specify binary (0) or hexadecimal (1) data format.
 	 */
 	void printRawData(char *receiveBuffer, int format);
 
 	/** Print formatted ASCII data to serial port.
+	 * 
 	 *	@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
 	 */
 	void printASCIIData(char *receiveBuffer);
 
 
 	/** Print data in a format to be displayed graphically
+	 * 
 	*	@param receiveBuffer Pointer to data packet (9 bytes -> Status + 2*(T+X+Y+Z)).
 	*/
 	void printChartData(char *receiveBuffer);
@@ -108,32 +130,43 @@ public:
 	void startTimer();
 
 	/** Print time taken between readings.
-	*/
+	 */
 	void printTimeElapsed();
 
+	/** Retrieve the I2C address of the current Hall effect chip object.
+	 * 
+	 * 	@return I2C Address given for this object.
+	 */ 
 	int getAddress();
 	
 private:
 
 	/** Point to wire buses to simplify communication code.
+	 * 
 	 *	@param wireNo Desired I2C channel to communicate on.
 	 *	@return i2c_t3 Pointer to I2C channel (Wire) object.
 	 */
 	i2c_t3* WhichWire(uint8_t wireNo);
 
 	/** Print error description
+	 * 
 	 *	@param error byte specifying nature of the error received
 	 */
 	void printError(uint8_t error);
 
+	/** I2C Address of Hall effect node object */
 	int _I2CAddress;
+
+	/** Backup address for changing address bug- unknown cause. */
 	int backup_address;
 
+	/** Print detailed feedback or not */
 	bool verbosefb = true;
 
+	/** Error code */
 	uint8_t _error;
 
-	// Variable to hold the times.
+	/** Variables to hold the times. */
 	float start, time;
 };
 

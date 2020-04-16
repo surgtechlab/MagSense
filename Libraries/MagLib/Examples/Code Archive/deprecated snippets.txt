@@ -1,0 +1,148 @@
+/** Deprecated code snippets from the MagLib Library.
+ *  Updated 16.04.2020
+ */
+
+bool MagLib::test_SD_datalog()
+{
+	uint32_t max_writes = FILE_SIZE/sizeof(SDbuf); //max number of writes to SD file
+	uint32_t num_writes = 0;
+	uint32_t m = 0; //microsec clock value (to regulate loop)
+	uint32_t m_last = 0;
+	uint32_t log_start_time;
+	uint32_t log_elapsed_time;
+	int32_t write_size;
+
+	// Loop dT in micro sec (100Hz)
+	uint32_t loop_dt = 10000; //loop dT in micro secs (100Hz)
+
+	//Define packet end
+	SDbuf[BUF_SIZE-3] = 'X';
+	SDbuf[BUF_SIZE-2] = 'Y';
+	SDbuf[BUF_SIZE-1] = 'Z';
+
+	//**********************************************
+	int month, day, hour, minute;
+	//**********************************************
+	switch (PLATFORM) {
+
+		case BLE:
+			//Set log-filename - Uses 8.3 name format
+			rn487xBle.sendData("E", 1);
+
+			while (rn487xBle.available() < 8) { }
+
+			for (int i = 0; i < 8; i++)
+				filename[i] = rn487xBle.getInputBuffer();
+
+			break;
+
+		case HM10:
+			break;
+
+		case SERIAL:
+			// Maximum of 8 bytes for name
+			if (verbosefb) Serial.println("Enter filename:");
+			else Serial.println('E');
+
+			while (Serial.available() < 8) { }
+
+			for (int i = 0; i < 8; i++)
+				filename[i] = Serial.read();
+
+			break;
+
+		default:
+			Serial.println("\n*** NO PLATFORM SPECIFIED");
+			return;
+	}
+
+    Serial.print("Logging. Filename=");
+    Serial.println(filename);
+
+	// Create file (truncate existing file)
+	if (!file.open(filename, O_RDWR | O_CREAT | O_TRUNC)) { //?? Remove TRUNC ??
+		Serial.println("ERROR: file open failed");
+		return false;
+	} else {
+		file.truncate(0); //file with 0 bytes and absolutely no contents in it
+		Serial.println("File open OK");
+	}
+
+	digitalWrite(LED, HIGH); //Set StatusLED ON during write
+
+	//*** LOGGING LOOP ******************
+	log_start_time = millis();
+
+	for (uint32_t i = 0; i < max_writes; i++) {
+		m = micros(); //read time
+
+		readSensingNodesFor(DEVICE, SDbuf);
+		// Serial.println("\n**************receiveBuffer:");
+		// Serial.write(SDbuf,BUF_SIZE);
+
+		write_size = file.write(SDbuf, BUF_SIZE);
+
+		for (unsigned j = 0; j < max_writes; j+=max_writes/10) if (i == j)
+			Serial.printf("%d%%\n", j/(max_writes/100));
+
+		if (write_size != BUF_SIZE) {
+			sd.errorPrint("write failed");
+			file.close();
+			return false;
+		}
+
+		m = micros() - m;
+
+		//Regulate loop rate here*
+		do {
+			delay(1);
+			m =  micros();
+		} while ( (m - m_last) < loop_dt);
+
+		m_last = m;
+		//************************
+
+		num_writes = i;
+	} //End write loop *****************
+
+	digitalWrite(LED, LOW);
+	file.sync();
+	log_elapsed_time = millis() - log_start_time;
+	file.close();
+
+	Serial.print("\nWrite Stopped at cycle ");
+	Serial.print(num_writes);
+	Serial.print(" of ");
+	Serial.println(max_writes);
+
+	//Print Performance Information to USB Serial
+	Serial.print("\nAverage Loop Time (ms): ");
+	Serial.println( log_elapsed_time/num_writes );
+
+	return true;
+}
+
+void MagLib::comms_SystemCheck()
+{
+	//Serial.println("Testing SD Datalog.");
+	test_SD_datalog();
+	//Serial.println("SD data log checks complete.");
+
+	//Serial.println("Checking SD status");
+	comms_SD_Status();
+}
+
+void MagLib::comms_EstablishContact()
+{
+	// CHANGE DEPENDING ON PLATFORM
+	while (Serial.available() <= 0) {
+		Serial.println("Waiting...");
+		delay(2000);
+	}
+
+	Serial.print("!Magboard n64 v: ");
+	Serial.print(__DATE__);
+	Serial.print(" ");
+	Serial.print(__TIME__);
+	Serial.print(" ");
+}

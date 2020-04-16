@@ -314,20 +314,6 @@ void MLX90393::startBurstMode(char *receiveBuffer, char zyxt, int i2cLine)
 	if (verbosefb) Serial.println();
 }
 
-void MLX90393::resetDevice(char *receiveBuffer, uint8_t select, int i2cLine)
-{
-	/*
-	// Create pointer to desired I2C line object
-	i2c_t3* thisWire = WhichWire(i2cLine);
-	
-	uint8_t exit = 0x80;
-	uint8_t reset = 0xF0;
-	uint8_t write = 0x60;
-	uint8_t set_AH = 0x00;
-	uint8_t set_AL = 0x0C;
-	uint8_t addr = 0x00;
-	*/
-}
 
 /*Return number of bytes available, if after a request for read,
  * there is actually something to read*/
@@ -342,13 +328,9 @@ uint8_t MLX90393::measureReady(uint8_t i2cLine)
 }
 
 //So you've requested, and you know there's bytes to be read, so go and read
-uint8_t MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
+void MLX90393::takeMeasure(char *receiveBuffer, int i2cLine)
 {
-	/* Here's an email from Pete that explains what each byte means:
-	* Each read from a chip (with our current config) will return the following (each line = 1 *
-	* byte)
-
-	* [MLX Return data] (I may have ordered XYZ wrong, but you get the idea)
+	/* [MLX Return data]
 	* Status
 	* 0
 	* 0
@@ -382,6 +364,7 @@ void MLX90393::RequestMeasurement(char *receiveBuffer, char zyxt, int i2cLine)
 {
 	static const uint8_t select = (0x40)|(zyxt);
 	
+	// Strange code anomoly- address 0x13 will change itself so check and reset.
 	if (_I2CAddress > 0x13) _I2CAddress = backup_address;
 
 	WhichWire(i2cLine)->beginTransmission(_I2CAddress);	// Start I2C Transmission

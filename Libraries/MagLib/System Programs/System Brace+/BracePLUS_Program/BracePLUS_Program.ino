@@ -8,7 +8,7 @@ char buffer[BRACE];
 
 void setup() {
   // put your setup code here, to run once:
-  brace.setupForClient(SERIAL, 	// Comms platform
+  brace.setupForClient(BLE, 	// Comms platform
 						BRACE, 		// Device (nodes to read from)
 						13, 		// LED pin
 						115200,		// BAUD rate
