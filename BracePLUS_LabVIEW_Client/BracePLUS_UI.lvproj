@@ -46,6 +46,8 @@
 		<Item Name="BracePLUS_File_Viewer.vi" Type="VI" URL="../BracePLUS_File_Viewer.vi"/>
 		<Item Name="BracePLUS_UI_Analysis.vi" Type="VI" URL="../BracePLUS_UI_Analysis.vi"/>
 		<Item Name="BracePLUS_Main.vi" Type="VI" URL="../BracePLUS_Main.vi"/>
+		<Item Name="BracePLUS_Serial_Interface.vi" Type="VI" URL="../BracePLUS_Serial_Interface.vi"/>
+		<Item Name="comms_Serial_Open.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/comms_Serial_Open.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
@@ -137,8 +139,13 @@
 				<Item Name="LVBoundsTypeDef.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/miscctls.llb/LVBoundsTypeDef.ctl"/>
 				<Item Name="BuildHelpPath.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/BuildHelpPath.vi"/>
 				<Item Name="GetHelpDir.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/GetHelpDir.vi"/>
+				<Item Name="System Exec.vi" Type="VI" URL="/&lt;vilib&gt;/Platform/system.llb/System Exec.vi"/>
+				<Item Name="Get File Extension.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/libraryn.llb/Get File Extension.vi"/>
+				<Item Name="Is Path and Not Empty.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/file.llb/Is Path and Not Empty.vi"/>
+				<Item Name="Show in File System.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/libraryn.llb/Show in File System.vi"/>
 			</Item>
 			<Item Name="lvanlys.dll" Type="Document" URL="/&lt;resource&gt;/lvanlys.dll"/>
+			<Item Name="comms_Serial_Read_TXT.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/comms_Serial_Read_TXT.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
 			<Item Name="Main Application" Type="EXE">
