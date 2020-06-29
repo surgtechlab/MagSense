@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:chart="clr-namespace:Syncfusion.SfChart.XForms;assembly=Syncfusion.SfChart.XForms"
+             mc:Ignorable="d"
+             Title="Inspect File"
+             x:Class="BracePLUS.Views.Inspect">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Share"
+                     Command="{Binding ShareCommand}"/>
+        <ToolbarItem Text="Delete"
+                     Command="{Binding DeleteCommand}"/>
+        <ToolbarItem Text="Upload"
+                     Command="{Binding CloudUploadCommand}"/>
+    </ContentPage.ToolbarItems>
+   
+    <ContentPage.Content>
+        <ScrollView BackgroundColor="White">
+            <StackLayout Padding="12"
+                         Margin="4"
+                         Spacing="5">
+                <!-- File Info Section -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Label Text="{Binding Date}"
+                           TextColor="Black"
+                           FontSize="Large"/>
+                    <Label Text="{Binding Location}"
+                           FontSize="Medium"
+                           HorizontalTextAlignment="End"
+                           TextColor="DimGray"
+                           Grid.Column="1"/>
+                </Grid>
+                <Label Text="{Binding Duration, StringFormat='Duration: {0:0.00}s'}"
+                       FontSize="Medium"/>
+                <Label Text="{Binding FormattedSize, StringFormat='File size: {0}'}"
+                       FontSize="Medium"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Label Text="View tarred data"
+                           FontSize="Medium"
+                           HorizontalTextAlignment="Start"
+                           TextColor="DimGray"/>
+                    
+                    <Switch IsToggled="{Binding SwitchToggled}"
+                            Grid.Column="1"/>
+                </Grid>
+                
+
+                <BoxView BackgroundColor="LightGray"
+                         Margin="0, 12"
+                         HeightRequest="1"
+                         WidthRequest="100"/>
+                
+                <!-- File Analysis Section -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Label Text="Average Pressure"
+                           TextColor="Black"
+                           FontSize="Large"
+                           VerticalOptions="CenterAndExpand"
+                           Grid.Row="0"/>
+                    <Label Text="{Binding AverageChange}"
+                           Grid.Row="1"
+                           FontSize="Medium"/>
+                    <Label Text="{Binding AverageOverall, StringFormat='Overall Average: {0:0.000}'}"
+                           Grid.Row="2"
+                           FontSize="Medium"/>
+                    <Frame BackgroundColor="OrangeRed"
+                           HeightRequest="80"
+                           WidthRequest="80"
+                           HorizontalOptions="CenterAndExpand"
+                           VerticalOptions="CenterAndExpand"
+                           CornerRadius="60"
+                           Padding="4"
+                           Margin="0"
+                           Grid.Column="1"
+                           Grid.RowSpan="3">
+                        <Label Text="{Binding AveragePressure, StringFormat='{0:0.00}'}"
+                               VerticalOptions="CenterAndExpand"
+                               HorizontalOptions="CenterAndExpand"
+                               TextColor="White"
+                               FontSize="Medium"/>
+                    </Frame>
+
+                    <Label Text="Maximum Pressure"
+                           TextColor="Black"
+                           FontSize="Large"
+                           VerticalOptions="CenterAndExpand"
+                           Grid.Row="4"/>
+                    <Label Text="{Binding MaximumChange, StringFormat='Change: {0:0.00}%'}"
+                           Grid.Row="5"
+                           FontSize="Medium"/>
+                    <Label Text="{Binding MaximumOverall, StringFormat='Overall Average: {0:0.000}'}"
+                           Grid.Row="6"
+                           FontSize="Medium"/>
+                    <Frame BackgroundColor="Green"
+                           HeightRequest="80"
+                           WidthRequest="80"
+                           HorizontalOptions="CenterAndExpand"
+                           VerticalOptions="CenterAndExpand"
+                           CornerRadius="60"
+                           Padding="4"
+                           Margin="0"
+                           Grid.Column="1"
+                           Grid.Row="4"
+                           Grid.RowSpan="3">
+                        <Label Text="{Binding MaxPressure, StringFormat='{0:0.00}'}"
+                               VerticalOptions="CenterAndExpand"
+                               HorizontalOptions="CenterAndExpand"
+                               TextColor="White"
+                               FontSize="Medium"/>
+                    </Frame>
+                </Grid>
+                
+                <BoxView BackgroundColor="LightGray"
+                         Margin="0, 12"
+                         HeightRequest="1"
+                         WidthRequest="100"/>
+                
+                <!-- Max normal pressure chart Section -->
+
+                <chart:SfChart HeightRequest="300"
+                               VerticalOptions="FillAndExpand"
+                               HorizontalOptions="FillAndExpand">
+
+                    <chart:SfChart.ChartBehaviors>
+                        <chart:ChartZoomPanBehavior EnableSelectionZooming="True"
+                                                    EnableDoubleTap="True"
+                                                    MaximumZoomLevel="25"
+                                                    ZoomMode="X"/>
+                    </chart:SfChart.ChartBehaviors>
+
+                    <chart:SfChart.Series>
+                        <chart:SplineSeries ItemsSource="{Binding LineChartData}"
+                                            Color="Red"
+                                            XBindingPath="Name"
+                                            YBindingPath="Value" />
+                    </chart:SfChart.Series>
+
+                    <chart:SfChart.PrimaryAxis>
+                        <chart:CategoryAxis IsVisible="True"/>
+                    </chart:SfChart.PrimaryAxis>
+
+                    <chart:SfChart.SecondaryAxis>
+                        <chart:NumericalAxis Minimum="{Binding LineChartMinimum}"
+                                             Maximum="{Binding LineChartMaximum}"/>
+                    </chart:SfChart.SecondaryAxis>
+                </chart:SfChart>
+                
+                <Button Text="Expand"
+                        Command="{Binding ShowGraphCommand}">
+                    
+                </Button>
+
+                <BoxView BackgroundColor="LightGray"
+                         Margin="0, 12"
+                         HeightRequest="1"
+                         WidthRequest="100"/>
+                
+                <!-- All pressure chart section -->
+
+                <chart:SfChart VerticalOptions="FillAndExpand"
+                               HorizontalOptions="FillAndExpand"
+                               HeightRequest="300">
+
+                    <chart:SfChart.Series>
+                        <chart:ColumnSeries ItemsSource="{Binding BarChartData}"
+                                            XBindingPath="Name"
+                                            YBindingPath="Value" 
+                                            ListenPropertyChange="True"/>
+                    </chart:SfChart.Series>
+
+                    <chart:SfChart.PrimaryAxis>
+                        <chart:CategoryAxis />
+                    </chart:SfChart.PrimaryAxis>
+
+                    <chart:SfChart.SecondaryAxis>
+                        <chart:NumericalAxis Minimum="{Binding BarChartMinimum}"
+                                             Maximum="{Binding BarChartMaximum}"/>
+                    </chart:SfChart.SecondaryAxis>
+
+                </chart:SfChart>
+                
+                <Slider Maximum="{Binding Packets}"
+                        Value="{Binding SliderValue}"/>
+
+                <!-- Debug Section -->
+                <BoxView BackgroundColor="LightGray"
+                         Margin="0, 12"
+                         HeightRequest="1"
+                         WidthRequest="100"/>
+                
+                <Label Text="{Binding Packets, StringFormat='Data packets: {0}'}"
+                       TextColor="Black"
+                       Margin="8, 0"
+                       FontSize="Large"/>
+
+                <Label Text="{Binding DataString}"
+                       TextColor="Black"
+                       FontSize="Large"
+                       Margin="8">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ShowDataCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
+                <Label Text="{Binding Filename}"
+                       FontSize="Medium"
+                       Margin="8"/>
+            </StackLayout>
+        </ScrollView>
+    </ContentPage.Content>
+</ContentPage>

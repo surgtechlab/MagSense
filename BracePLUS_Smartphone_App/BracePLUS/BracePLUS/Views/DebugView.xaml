@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                x:Class="BracePLUS.Views.DebugView">
+
+    <ContentPage.Content>
+        <TableView HasUnevenRows="True"
+                   BackgroundColor="#EEEEEE">
+            <TableRoot>
+                <TableSection Title="Connection">
+                    <ViewCell>
+                        <StackLayout Spacing="10"
+                                     BackgroundColor="White"
+                                     Padding="10">
+                            
+                            <Label Text="{Binding ConnectedDevice, StringFormat='Connected Device: {0}'}" FontSize="Medium"/>
+                            <Label Text="{Binding RSSI, StringFormat='Signal Strength: {0}'}" FontSize="Medium"/>
+                            <Label Text="{Binding ServiceID, StringFormat='Service ID: {0}'}" FontSize="Medium"/>
+                            <Label Text="{Binding CharTxID, StringFormat='Tx Characteristic ID: {0}'}" FontSize="Medium"/>
+                            <Label Text="{Binding CharRxID, StringFormat='Rx Characteristic ID: {0}'}" FontSize="Medium"/>
+
+                        </StackLayout>
+                    </ViewCell>
+                </TableSection>
+
+                <TableSection Title="Simulation">
+                    <ViewCell>
+                        <StackLayout>
+                            <Button Text="Generate simulated data"
+                                Margin="0, 6"
+                                FontSize="20"
+                                HeightRequest="60"
+                                Command="{Binding SimulateData}"
+                                VerticalOptions="FillAndExpand"
+                                HorizontalOptions="FillAndExpand"/>
+
+                            <Button Text="Clear files"
+                                Margin="0, 6"
+                                FontSize="20"
+                                HeightRequest="60"
+                                Command="{Binding ClearFiles}"
+                                VerticalOptions="FillAndExpand"
+                                HorizontalOptions="FillAndExpand"/>
+                        </StackLayout>
+                    </ViewCell>
+                </TableSection>
+                
+                <TableSection Title="Event Log">
+                    <ViewCell>
+                        <ScrollView>
+                            <StackLayout x:Name="MessageStack"
+                                         BackgroundColor="White"
+                                         Padding="5"
+                                         HorizontalOptions="FillAndExpand"
+                                         VerticalOptions="FillAndExpand">
+                            </StackLayout>
+                        </ScrollView>
+                    </ViewCell>
+                </TableSection>
+            </TableRoot>
+        </TableView>
+    </ContentPage.Content>
+</ContentPage>
+

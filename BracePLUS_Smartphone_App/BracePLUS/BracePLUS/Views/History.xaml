@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:chart="clr-namespace:Syncfusion.SfChart.XForms;assembly=Syncfusion.SfChart.XForms"
+             x:Class="BracePLUS.Views.History">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Cloud"
+                     Command="{Binding CloudSyncCommand}"/>
+        <ToolbarItem Text="Phone"
+                     Command="{Binding PhoneSyncCommand}"/>
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Content>
+        <StackLayout BackgroundColor="#2196F3">
+            <ListView x:Name="listView"
+                      CachingStrategy="RecycleElement"
+                      SelectedItem="{Binding SelectedItem}"
+                      ItemsSource="{Binding DataObjects}"
+                      HasUnevenRows="True"
+                      HeightRequest="{Binding ListViewHeight}"
+                      SeparatorVisibility="None"
+                      IsPullToRefreshEnabled="True"
+                      IsRefreshing="{Binding IsRefreshing}"
+                      RefreshCommand="{Binding RefreshCommand}"
+                      BackgroundColor="#2196F3">
+
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <ViewCell>
+                            <Frame BackgroundColor="White"
+                                   Padding="10"
+                                   Margin="4, 8"
+                                   CornerRadius="20">
+                                <StackLayout>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Label Text="{Binding Name}"
+                                               FontSize="Large"
+                                               HorizontalOptions="StartAndExpand"
+                                               TextColor="Black"
+                                               Grid.Column="0"/>
+                                        <Label Text="{Binding Detail}"
+                                               FontSize="Medium"
+                                               TextColor="DimGray"
+                                               Grid.Row="1"/>
+                                        <Label Text="{Binding Location}"
+                                               FontSize="Large"
+                                               HorizontalTextAlignment="End"
+                                               TextColor="DimGray"
+                                               Grid.Column="1"/>
+                                        <Label Text="{Binding Tag}"
+                                               TextColor="{Binding TagColour}"
+                                               HorizontalTextAlignment="End"
+                                               FontSize="Medium"
+                                               Grid.Column="1"
+                                               Grid.Row="1"/>
+                                    </Grid>
+                                   
+                                    <Label Text="{Binding AveragePressure, StringFormat='Average Pressure: {0:0.00}'}"
+                                           FontSize="Medium"
+                                           TextColor="DimGray"
+                                           IsVisible="{Binding IsDownloaded}"/>
+                                    <Label Text="{Binding MaxPressure, StringFormat='Max Pressure: {0:0.00}'}"
+                                           FontSize="Medium"
+                                           TextColor="DimGray"
+                                           IsVisible="{Binding IsDownloaded}"/>
+
+                                    <ProgressBar Progress="{Binding DownloadProgress}"
+                                                 IsVisible="{Binding ProgressBarEnabled}"
+                                                 Margin="10"/>
+
+                                    <chart:SfChart x:Name="chart"
+                                                   HeightRequest="160"
+                                                   VerticalOptions="FillAndExpand"
+                                                   HorizontalOptions="FillAndExpand"
+                                                   IsVisible="{Binding ChartEnabled}">
+
+                                        <chart:SfChart.Series>
+                                            <chart:SplineSeries ItemsSource="{Binding PreviewNormalData}"
+                                                                Color="Red"
+                                                                XBindingPath="Name"
+                                                                YBindingPath="Value" />
+                                        </chart:SfChart.Series>
+
+                                        <chart:SfChart.PrimaryAxis>
+                                            <chart:NumericalAxis />
+                                        </chart:SfChart.PrimaryAxis>
+
+                                        <chart:SfChart.SecondaryAxis>
+                                            <chart:NumericalAxis Maximum="{Binding ChartMaximum}"
+                                                                 Minimum="{Binding ChartMinimum}}"/>
+                                        </chart:SfChart.SecondaryAxis>
+                                    </chart:SfChart>
+                                    
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <Button Grid.Row="0"
+                                                Grid.Column="0"
+                                                Grid.ColumnSpan="1"
+                                                VerticalOptions="CenterAndExpand"
+                                                HorizontalOptions="CenterAndExpand"
+                                                BackgroundColor="White"
+                                                Text="Download"
+                                                TextColor="Black"
+                                                Command="{Binding DownloadCommand}"/>
+                                        <Button Grid.Row="0"
+                                                Grid.Column="1"
+                                                Grid.ColumnSpan="1"
+                                                VerticalOptions="CenterAndExpand"
+                                                HorizontalOptions="CenterAndExpand"
+                                                BackgroundColor="White"
+                                                Text="Share"
+                                                TextColor="Black"
+                                                Command="{Binding ShareClicked}"/>
+                                    </Grid>
+                                </StackLayout>
+                            </Frame>
+                        </ViewCell>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </StackLayout>
+    </ContentPage.Content>    
+
+</ContentPage>

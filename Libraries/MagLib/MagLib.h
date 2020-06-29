@@ -53,14 +53,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #define SERIAL_TIMEOUT_MS 2500
 
 // ****** Brace+ Definitions ****** //
-#define LED_GREEN		27
-#define LED_RED			28
-#define LED_BLUE		29
+#define BRACE_CONNECT_LED		27
+#define BRACE_LED_R			28
+#define BRACE_LED_B		29
 
 // ****** FootPlate Definitions ****** //
-#define LED_CONNECT		26
-#define LED_LOGGING		25
-#define LED_CONTACT		24
+#define MAG128_LED_CONNECT		26
+#define MAG128_LED_LOGGING		25
+#define MAG128_LED_CONTACT		24
 
 // ****** Logging Timing Definitions ****** //
 #define ONE_MIN			60
@@ -93,7 +93,7 @@ public:
 	 * 
 	 *	@param[in] platform The BLE system being used (HardwareSerial, i.e. RN4781 or SoftwareSerial, i.e. HM10)
 	 *	@param[in] DEVICE Specific Mag device to be used (e.g. FOOTPLATE, HAILO, etc)
-	 *	@param[in] ledPin Teensy onboard LED pin.
+	 *	@param[in] ledPin Teensy onboard LED_TEENSY pin.
 	 *	@param[in] baud Baud rate for serial communication.
 	 *	@param[in] _read_sync Specify to make synchronous or asynchronous I2C calls.
 	 *	@param[in] _verbosefb Set system feedback to serial port on or off.
@@ -354,7 +354,7 @@ private:
 	/** Pins specifying multiplexer data bus. [A3 A2 A1 A0]. */
 	int _muxSelect[4];
 
-	/** LED Indicator pin status. */
+	/** LED_TEENSY Indicator pin status. */
 	bool status_led = false;
 
 	/** Timing variables */
@@ -366,7 +366,7 @@ private:
 	int PLATFORM;
 	int DEVICE;
 	int BAUD;
-	int LED;
+	int LED_TEENSY;
 	int mux_bytes;
 	int i2c_bytes;
 	int sync_read = 0;

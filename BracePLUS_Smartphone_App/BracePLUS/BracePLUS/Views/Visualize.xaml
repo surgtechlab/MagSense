@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:chart="clr-namespace:Syncfusion.SfChart.XForms;assembly=Syncfusion.SfChart.XForms"
+             x:Class="BracePLUS.Views.Visualize">
+
+    <ContentPage.ToolbarItems>
+
+        <ToolbarItem Text="Clear"
+                     Priority="0"
+                     Clicked="OnClearGraphButtonClicked"/>
+        <ToolbarItem Text="Save"
+                     Priority="1"
+                     Clicked="OnSaveButtonClicked"/>
+
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Content>
+        <StackLayout Padding="8, 8, 8, 8">
+
+            <Picker x:Name="NodePicker"
+                    HorizontalOptions="FillAndExpand"
+                    ItemsSource="{Binding NodeList}"
+                    SelectedIndexChanged="OnPickerSelectedIndexChanged"
+                    BackgroundColor="White"
+                    FontSize="Medium">
+            </Picker>
+            
+            <!-- Graph -->
+            <chart:SfChart x:Name="DataChart"
+                            VerticalOptions="FillAndExpand"
+                            HorizontalOptions="FillAndExpand">
+
+                <chart:SfChart.Series>
+                    <chart:LineSeries x:Name="lineSeries1" 
+                                      ItemsSource="{Binding LineData1}" 
+                                      Color="Red"
+                                      XBindingPath="Name"
+                                      YBindingPath="Value" />
+                    <chart:LineSeries x:Name="lineSeries2" 
+                                      ItemsSource="{Binding LineData2}" 
+                                      Color="Blue"
+                                      XBindingPath="Name"
+                                      YBindingPath="Value" />
+                    <chart:LineSeries x:Name="lineSeries3" 
+                                      ItemsSource="{Binding LineData3}" 
+                                      Color="Green"
+                                      XBindingPath="Name"
+                                      YBindingPath="Value" />
+                </chart:SfChart.Series>
+                
+                <chart:SfChart.PrimaryAxis>
+                    <chart:CategoryAxis AutoScrollingDelta="100"/> 
+                </chart:SfChart.PrimaryAxis>
+
+                <chart:SfChart.SecondaryAxis>
+                    <chart:NumericalAxis />
+                </chart:SfChart.SecondaryAxis>
+		  
+            </chart:SfChart>
+
+        </StackLayout>
+        
+    </ContentPage.Content>
+
+</ContentPage>

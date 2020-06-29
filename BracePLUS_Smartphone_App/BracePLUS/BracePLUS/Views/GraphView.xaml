@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:chart="clr-namespace:Syncfusion.SfChart.XForms;assembly=Syncfusion.SfChart.XForms"
+             x:Class="BracePLUS.Views.GraphView">
+    <ContentPage.Content>
+        <StackLayout>
+            <chart:SfChart x:Name="chart"
+                       HeightRequest="160"
+                       VerticalOptions="FillAndExpand"
+                       HorizontalOptions="FillAndExpand">
+
+                <chart:SfChart.ChartBehaviors>
+                    <chart:ChartZoomPanBehavior EnableSelectionZooming="True"
+                                                EnableDoubleTap="True"
+                                                MaximumZoomLevel="25"
+                                                ZoomMode="X"/>
+                </chart:SfChart.ChartBehaviors>
+
+                <chart:SfChart.Series>
+                    <chart:FastLineSeries ItemsSource="{Binding NormalData}"
+                                          Color="Blue"
+                                          XBindingPath="Name"
+                                          YBindingPath="Value"
+                                          StrokeWidth="1"/>
+                </chart:SfChart.Series>
+
+                <chart:SfChart.PrimaryAxis>
+                    <chart:NumericalAxis RangePadding="Normal"/>
+                </chart:SfChart.PrimaryAxis>
+
+                <chart:SfChart.SecondaryAxis>
+                    <chart:NumericalAxis Minimum="0.3"
+                                         Maximum="0.9"/>
+                </chart:SfChart.SecondaryAxis>
+            </chart:SfChart>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

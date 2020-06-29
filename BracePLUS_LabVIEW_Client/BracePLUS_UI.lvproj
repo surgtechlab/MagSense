@@ -40,6 +40,8 @@
 		<Item Name="Calibrations" Type="Folder" URL="../Calibrations">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
+		<Item Name="file_pre_process.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/file_pre_process.vi"/>
+		<Item Name="comms_Serial_Open.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/comms_Serial_Open.vi"/>
 		<Item Name="BracePLUS_Serial_Viewer.vi" Type="VI" URL="../BracePLUS_Serial_Viewer.vi"/>
 		<Item Name="BracePLUS_Serial_Logger.vi" Type="VI" URL="../BracePLUS_Serial_Logger.vi"/>
 		<Item Name="BracePLUS_Serial_FileIO.vi" Type="VI" URL="../BracePLUS_Serial_FileIO.vi"/>
@@ -47,7 +49,6 @@
 		<Item Name="BracePLUS_UI_Analysis.vi" Type="VI" URL="../BracePLUS_UI_Analysis.vi"/>
 		<Item Name="BracePLUS_Main.vi" Type="VI" URL="../BracePLUS_Main.vi"/>
 		<Item Name="BracePLUS_Serial_Interface.vi" Type="VI" URL="../BracePLUS_Serial_Interface.vi"/>
-		<Item Name="comms_Serial_Open.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/comms_Serial_Open.vi"/>
 		<Item Name="Dependencies" Type="Dependencies">
 			<Item Name="vi.lib" Type="Folder">
 				<Item Name="whitespace.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/whitespace.ctl"/>
@@ -146,6 +147,12 @@
 			</Item>
 			<Item Name="lvanlys.dll" Type="Document" URL="/&lt;resource&gt;/lvanlys.dll"/>
 			<Item Name="comms_Serial_Read_TXT.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/comms_Serial_Read_TXT.vi"/>
+			<Item Name="file_read_binary_pkt.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/file_read_binary_pkt.vi"/>
+			<Item Name="data_process_packet.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/data_process_packet.vi"/>
+			<Item Name="magboard_128_calibrate_nodes.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/calibration/magboard_128_calibrate_nodes.vi"/>
+			<Item Name="FGV States.ctl" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/calibration/FGVs/FGV States.ctl"/>
+			<Item Name="Calibration FGV.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/calibration/FGVs/Calibration FGV.vi"/>
+			<Item Name="NN_Deploy.vi" Type="VI" URL="../../FootPlate_LabVIEW_Client/subVIs/calibration/NN_Deploy.vi"/>
 		</Item>
 		<Item Name="Build Specifications" Type="Build">
 			<Item Name="Main Application" Type="EXE">

@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:chart="clr-namespace:Syncfusion.SfChart.XForms;assembly=Syncfusion.SfChart.XForms"
+             x:Class="BracePLUS.Views.Interface">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Connect"
+                     Command="{Binding SetupBLECommand}"/>
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Content>
+        <StackLayout Padding="8, 8, 8, 8"
+                     BackgroundColor="White">
+
+            <Button Text="{Binding StreamText}"
+                    Command="{Binding StreamCommand}"
+                    VerticalOptions="Start"
+                    BackgroundColor="{Binding ButtonColour}"/>
+
+            <Grid Padding="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Label Text="{Binding Average, StringFormat='Average: {0:0.000}'}"
+                       FontSize="25"
+                       TextColor="Black"
+                       Grid.Column="0"
+                       Grid.Row="0"/>
+
+                <Label Text="{Binding Maximum, StringFormat='Maximum: {0:0.000}'}"
+                       FontSize="25"
+                       TextColor="Black"
+                       Grid.Column="0"
+                       Grid.Row="1"/>
+
+                <Button Text="Tare Values"
+                        Command="{Binding TareCommand}"
+                        BackgroundColor="HotPink"
+                        VerticalOptions="CenterAndExpand"
+                        Grid.Column="1"
+                        Grid.RowSpan="2"/>
+            </Grid>
+            
+            <chart:SfChart Margin="40, 10"
+                           VerticalOptions="FillAndExpand"
+                           HorizontalOptions="FillAndExpand"
+                           IsVisible="{Binding BarChartEnabled}">
+                
+                <chart:SfChart.Series>
+                    <chart:ColumnSeries ItemsSource="{Binding BarChartData}"
+                                        ListenPropertyChange="True"
+                                        Color="#167BEA"
+                                        XBindingPath="Name"
+                                        YBindingPath="Value" 
+                                        CornerRadius="16"/>
+                </chart:SfChart.Series>
+
+                <chart:SfChart.PrimaryAxis>
+                    <chart:CategoryAxis/>
+                </chart:SfChart.PrimaryAxis>
+
+                <chart:SfChart.SecondaryAxis>
+                    <chart:NumericalAxis Maximum="{Binding BarChartMaximum}"
+                                         Minimum="{Binding BarChartMinimum}">
+                        <chart:NumericalAxis.StripLines>
+                            <chart:NumericalStripLine Start="0.4" 
+                                                      Width ="0.1" 
+                                                      Text="Low Pressure" 
+                                                      FillColor="#CAD6FE"/>
+                            <chart:NumericalStripLine Start="0.5" 
+                                                      Width ="0.2" 
+                                                      Text="Correct Pressure" 
+                                                      FillColor="#ACC0FE"/>
+                            <chart:NumericalStripLine Start="0.7" 
+                                                      Width ="0.15" 
+                                                      Text="High Pressure" 
+                                                      FillColor="#7F9DFD"/>
+                        </chart:NumericalAxis.StripLines>
+                    </chart:NumericalAxis>
+                </chart:SfChart.SecondaryAxis>
+            </chart:SfChart>
+
+            <Label Text="{Binding Status}"
+                   FontSize="Large"
+                   MaxLines="1"
+                   HorizontalTextAlignment="End">
+                
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer NumberOfTapsRequired="1"
+                                          Command="{Binding ShowDebugCommand}"/>
+                </Label.GestureRecognizers>
+            </Label>
+
+        </StackLayout>
+        
+    </ContentPage.Content>
+
+</ContentPage>

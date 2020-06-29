@@ -1,0 +1,147 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:chart="clr-namespace:Syncfusion.SfChart.XForms;assembly=Syncfusion.SfChart.XForms"
+             mc:Ignorable="d"
+             x:Class="BracePLUS.Views.Logging">
+    <ContentPage.Content>
+        <StackLayout BackgroundColor="Navy">
+            
+            <chart:SfChart HeightRequest="270"
+                           VerticalOptions="FillAndExpand"
+                           HorizontalOptions="FillAndExpand"
+                           BackgroundColor="Transparent"
+                           Margin="30">
+                
+                <chart:SfChart.ChartAnnotations>
+                    <chart:LineAnnotation X1="-1" Y1="{Binding AnnotationLineHeight}" 
+                                          X2="7" Y2="{Binding AnnotationLineHeight}" 
+                                          FillColor="White"
+                                          StrokeColor="White"
+                                          StrokeWidth="3"
+                                          StrokeDashArray="{Binding StrokeDashArray}"/>
+                </chart:SfChart.ChartAnnotations>
+                <chart:SfChart.Series>
+                    <chart:ColumnSeries ItemsSource="{Binding LoggedColumnSeries}"
+                                        XBindingPath="Name"
+                                        YBindingPath="Value"
+                                        CornerRadius="6"
+                                        ListenPropertyChange="True">
+                        <chart:ColumnSeries.ColorModel>
+                            <chart:ChartColorModel Palette="Custom">
+                                <chart:ChartColorModel.CustomGradientColors>
+                                    <chart:ChartGradientColor StartPoint="0.5,1" EndPoint="0.5,0">
+                                        <chart:ChartGradientColor.GradientStops>
+                                            <chart:ChartGradientStop Color="#A8EAEE" Offset= "0"/>
+                                            <chart:ChartGradientStop Color="#7BB0F9" Offset= "1"/>
+                                        </chart:ChartGradientColor.GradientStops>
+                                    </chart:ChartGradientColor>
+                                </chart:ChartColorModel.CustomGradientColors>
+                            </chart:ChartColorModel>
+                        </chart:ColumnSeries.ColorModel>
+                    </chart:ColumnSeries>
+                </chart:SfChart.Series>
+                
+                <chart:SfChart.PrimaryAxis>
+                    <chart:CategoryAxis ShowMajorGridLines="False">
+                        <chart:CategoryAxis.LabelStyle>
+                            <chart:ChartAxisLabelStyle TextColor="White"
+                                                       FontSize="9"/>
+                        </chart:CategoryAxis.LabelStyle>
+                    </chart:CategoryAxis>
+                </chart:SfChart.PrimaryAxis>
+
+                <chart:SfChart.SecondaryAxis>
+                    <chart:NumericalAxis ShowMajorGridLines="False"
+                                         ShowMinorGridLines="False">
+                        <chart:NumericalAxis.LabelStyle>
+                            <chart:ChartAxisLabelStyle TextColor="White"/>
+                        </chart:NumericalAxis.LabelStyle>
+                    </chart:NumericalAxis>
+                </chart:SfChart.SecondaryAxis>
+            </chart:SfChart>
+            
+            
+            <Grid VerticalOptions = "FillAndExpand">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="3*" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="3*" />
+                </Grid.ColumnDefinitions>
+
+                <ListView x:Name="listView"
+                          ItemsSource="{Binding DataObjectGroups}"
+                          SelectedItem="{Binding SelectedObject}"
+                          RefreshCommand="{Binding RefreshCommand}"
+                          IsRefreshing="{Binding IsRefreshing}"
+                          SeparatorColor="LightGray"
+                          IsGroupingEnabled="True"
+                          BackgroundColor="White"
+                          HasUnevenRows="True"
+                          Grid.Row = "0" 
+                          Grid.Column = "0" 
+                          Grid.RowSpan = "2"
+                          Grid.ColumnSpan = "3" 
+                          VerticalOptions = "FillAndExpand" 
+                          HorizontalOptions="FillAndExpand">
+                    <ListView.GroupHeaderTemplate>
+                        <DataTemplate>
+                            <ViewCell>
+                                <Label Text="{Binding Heading}"
+                                       Padding="5"/>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.GroupHeaderTemplate>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <ViewCell>
+                                <Frame Padding="8"
+                                       HasShadow="False">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="3*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Image Source="{Binding UpDownImage}"
+                                               Grid.Column="0"
+                                               HeightRequest="10"/>
+                                        <Label Text="{Binding Name}" 
+                                               FontSize="Medium" 
+                                               FontAttributes="Bold"  
+                                               Grid.Column="1"/>
+                                        <Label Text="{Binding FormattedPercentageDifference}" 
+                                               Grid.Column="2"
+                                               FontSize="Medium"
+                                               VerticalOptions="CenterAndExpand"
+                                               MaxLines="1"/>
+                                    </Grid>
+                                </Frame>
+                            </ViewCell>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <Button Text = "+"
+                        Command="{Binding LogCommand}"
+                        FontSize="Medium"
+                        HeightRequest="50"
+                        WidthRequest="50"
+                        CornerRadius="25"
+                        VerticalOptions="CenterAndExpand"
+                        HorizontalOptions="CenterAndExpand"
+                        Opacity="0.5" 
+                        BackgroundColor = "Fuchsia" 
+                        Grid.Row="1" 
+                        Grid.Column = "2"/>
+            </Grid>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>
